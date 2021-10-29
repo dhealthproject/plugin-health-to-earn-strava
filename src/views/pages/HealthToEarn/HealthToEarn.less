@@ -1,0 +1,112 @@
+/**
+ * This file is part of dHealth Wallet Plugins shared under LGPL-3.0
+ * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
+ *
+ * @package     dHealth Wallet Plugins
+ * @subpackage  Health to Earn with Strava
+ * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
+ * @license     LGPL-3.0
+ */
+@import "../../../theme.less";
+
+.dhealth-plugin-health-to-earn-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: @white;
+  display: grid;
+  grid-template-columns: 11rem auto;
+  grid-column-gap: 0.3rem;
+  grid-template-rows: 100%;
+
+  .title {
+    margin: 0.2rem;
+    margin-top: 0.29rem;
+    display: flex;
+    justify-content: space-between;
+
+    .title_txt {
+      font-size: @biggerFont;
+      line-height: 33px;
+      color: @primary;
+    }
+  }
+
+  .dashboard-left-container {
+    display: grid;
+    grid-template-rows: auto 0.2rem auto;
+
+    .node-details-container {
+      background: @white;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: top;
+      height: 100%;
+      text-align: center;
+
+      .symbol-tab-container.horizontal {
+        margin: auto;
+      }
+    }
+
+    hr.separator {
+      border-color: #5200c6;
+      border-top: 1px;
+      opacity: 0.2;
+      margin: 10px;
+    }
+
+    .break {
+      flex-basis: 100%;
+      height: 0;
+    }
+
+    .w50 {
+      width: 50%;
+    }
+
+    .subpage-field {
+      padding: 0 20px;
+      padding-bottom: 20px;
+      min-height: 4rem;
+      width: 100%;
+
+      label {
+        display: block;
+        color: @primary;
+        font-size: @biggerFont;
+        font-family: @themeFontMedium;
+        font-weight: @bold;
+      }
+
+      span {
+        color: @primary;
+        font-size: @biggerFont;
+        font-family: @themeFontMedium;
+      }
+
+      a {
+        font-size: @biggerFont;
+        font-family: @themeFontMedium;
+      }
+    }
+  }
+
+  .dashboard-right-container {
+    height: 100%;
+    min-width: 4.2rem;
+    background-color: @white;
+    border-radius: @borderRadius;
+    padding: 0 25px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    p {
+      font-size: @biggerFont;
+      font-family: @themeFont;
+      text-align: justify;
+      margin-bottom: .2rem;
+    }
+  }
+}

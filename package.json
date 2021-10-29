@@ -1,0 +1,67 @@
+{
+  "name": "@dhealth/plugin-health-to-earn-strava",
+  "description": "dHealth Network - Health to Earn showcase with Strava",
+  "homepage": "https://github.com/dhealthproject/plugin-health-to-earn-strava#readme",
+  "version": "1.0.0",
+  "author": {
+    "name": "dHealth Network",
+    "email": "info@dhealth.foundation",
+    "url": "https://dhealth.network"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dhealthproject/plugin-health-to-earn-strava.git"
+  },
+  "license": "LGPL-3.0-only",
+  "main": "dist/dHealthWalletPluginHealthToEarnStrava.common.js",
+  "types": "dist/types/HealthToEarn.d.ts",
+  "browser": {
+    "./sfc": "dist/views/HealthToEarn/HealthToEarn.vue"
+  },
+  "files": [
+    "dist/*",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "scripts": {
+    "serve:functions": "npm run serve --prefix firebase-app/functions",
+    "serve": "vue-cli-service serve",
+    "build": "npm run build:lib && npm run build:ts && npm run copy:vue",
+    "build:lib": "vue-cli-service build --target lib --name dHealthWalletPluginHealthToEarnStrava src/Strava.ts --mode production",
+    "build:ts": "tsc --emitDeclarationOnly",
+    "copy:vue": "cpy '**/*.vue' '../dist/' --cwd=src --parents"
+  },
+  "dependencies": {
+    "@dhealth/sdk": "^1.0.3-alpha-202110081200",
+    "@dhealth/wallet-api-bridge": "^1.3.0",
+    "@dhealth/wallet-components": "^1.3.0",
+    "vue": "^2.6.10",
+    "vue-property-decorator": "^8.1.0",
+    "vee-validate": "^3.2.3"
+  },
+  "devDependencies": {
+    "@babel/compat-data": "^7.14.0",
+    "@babel/core": "^7.14.2",
+    "@vue/cli-plugin-babel": "^4.5.13",
+    "@vue/cli-plugin-typescript": "^4.5.13",
+    "@vue/cli-plugin-unit-jest": "^4.5.13",
+    "@vue/cli-service": "^4.5.13",
+    "@vue/eslint-config-typescript": "^5.0.1",
+    "@vue/test-utils": "^1.2.0",
+    "babel-core": "7.0.0-bridge.0",
+    "babel-helper-vue-jsx-merge-props": "^2.0.3",
+    "babel-plugin-syntax-jsx": "^6.18.0",
+    "babel-plugin-transform-runtime": "^6.22.0",
+    "babel-plugin-transform-vue-jsx": "^3.5.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-stage-2": "^6.24.1",
+    "rimraf": "^3.0.2",
+    "semver": "^5.3.0",
+    "typescript": "^3.9.9",
+    "vue-template-compiler": "^2.5.2",
+    "cpy-cli": "^3.1.1",
+    "less": "^3.0.4",
+    "less-loader": "^4.1.0"
+  }
+}

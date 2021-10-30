@@ -51,16 +51,26 @@ Cloud functions can be tested using a local deployment using the `firebase-app/f
 ```bash
 cd firebase-app/functions
 firebase functions:config:get > .runtimeconfig.json
+cd ../..
 ```
 
 Serving the cloud functions locally works by executing the following command from the *root directory of the project*:
 
 ```bash
-cd ../..
-npm run serve:functions
+npm run serve
 ```
 
 This will deploy the cloud functions at the following URL: `http://localhost:5000/health-to-earn/us-central1/webhook`.
+
+## Deployment
+
+Cloud functions can be deployed to Firebase using the following command: 
+
+```bash
+firebase deploy --only functions
+```
+
+:warning: Note that after you deployed the functions, you may have to update the [environment][#environment] configuration again and replace `OAUTH_URL` with the /authorize function URL, replace `SUBSCRIBE_URL_HERE` with the /subscribe function URL and replace `CALLBACK_URL_HERE` with the /webhook function URL.
 
 ## License
 

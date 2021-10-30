@@ -25,8 +25,7 @@
     "package.json"
   ],
   "scripts": {
-    "serve:functions": "npm run serve --prefix firebase-app/functions",
-    "serve": "vue-cli-service serve",
+    "serve": "npm run serve --prefix firebase-app/functions",
     "build": "npm run build:lib && npm run build:ts && npm run copy:vue",
     "build:lib": "vue-cli-service build --target lib --name dHealthWalletPluginHealthToEarnStrava src/Strava.ts --mode production",
     "build:ts": "tsc --emitDeclarationOnly",

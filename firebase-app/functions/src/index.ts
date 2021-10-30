@@ -7,12 +7,15 @@
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
+import * as firebase from 'firebase';
 import * as functions from 'firebase-functions';
-const { getFirestore } = require('firebase-admin/firestore');
 import axios from 'axios';
 
 // initializes firebase/firestore
-const DATABASE = getFirestore();
+firebase.initializeApp({
+  projectId: 'health-to-earn'
+});
+const DATABASE = firebase.firestore();
 
 /// region cloud functions
 /**
@@ -50,7 +53,7 @@ export const authorize = functions.https.onRequest((request: any, response: any)
     + `&approval_prompt=auto`
     + `&scope=activity:read`
     + `&redirect_uri=${stravaConf.oauth_url}` // should be /link
-    + `&state=${data['dhealth.address']}`;
+    + `&state=${data['dhealth.address']}`; // forwards address
 
   return response.redirect(301,
     'https://www.strava.com/oauth/authorize' + stravaQuery

@@ -7,15 +7,24 @@
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
-import * as firebase from 'firebase';
 import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 import axios from 'axios';
+import { Address } from '@dhealth/sdk';
+
+// /!\ CAUTION /!\ 
+// /!\ reads service account
+// /!\ never checkin this file into a repository.
+const serviceAccount = require('../.firebaseAuth.json');
 
 // initializes firebase/firestore
-firebase.initializeApp({
-  projectId: 'health-to-earn'
+admin.initializeApp({
+  projectId: 'health-to-earn',
+  credential: admin.credential.cert(serviceAccount),
 });
-const DATABASE = firebase.firestore();
+
+// shortcuts
+const DATABASE = admin.firestore();
 
 /// region cloud functions
 /**
@@ -39,9 +48,12 @@ export const authorize = functions.https.onRequest((request: any, response: any)
   // param `dhealth.address` is obligatory
   const data = request.query;
   if (!('dhealth.address' in data)) {
-    response.sendStatus(400);
-    return ;
+    return response.sendStatus(400);
   }
+
+  // parses address to validate content or bail out
+  try { Address.createFromRawAddress(data['dhealth.address']) }
+  catch (e) { return response.sendStatus(400); }
 
   // reads environment configuration
   const stravaConf = functions.config().strava;
@@ -52,7 +64,7 @@ export const authorize = functions.https.onRequest((request: any, response: any)
     + `&response_type=code`
     + `&approval_prompt=auto`
     + `&scope=activity:read`
-    + `&redirect_uri=${stravaConf.oauth_url}` // should be /link
+    + `&redirect_uri=${encodeURIComponent(stravaConf.oauth_url)}` // should be /link
     + `&state=${data['dhealth.address']}`; // forwards address
 
   return response.redirect(301,
@@ -92,6 +104,11 @@ export const link = functions.https.onRequest((request: any, response: any) => {
     return response.sendStatus(400);
   }
 
+  // parses address to validate content or bail out
+  const dhpAddress = data['state'];
+  try { Address.createFromRawAddress(dhpAddress) }
+  catch (e) { return response.sendStatus(400); }
+
   const stravaConf = functions.config().strava;
   const stravaCode = data['code'];
   axios.post('https://www.strava.com/oauth/token', {
@@ -102,12 +119,15 @@ export const link = functions.https.onRequest((request: any, response: any) => {
   })
   .then((res: any) => {
     const athlete = res.data.athlete;
-    const address = res.data.state;
+    const address = dhpAddress;
 
     // saves the user in database
-    DATABASE.collection('users').doc(athlete.id).set({
+    DATABASE.collection('users').doc('' + athlete.id).set({
       address,
       athleteId: athlete.id,
+      accessToken: res.data.access_token,
+      refreshToken: res.data.refresh_token,
+      accessExpiresAt: res.data.expires_at,
       linkedAt: new Date().valueOf(),
     }, { merge: true })
     .then((user: any) => {
@@ -116,14 +136,45 @@ export const link = functions.https.onRequest((request: any, response: any) => {
 
       // redirects the user to create a webhook subscription
       response.redirect(301, subscribeURL);
+
+      //XXX subscription only needed once? (not per-user)
     })
-    .catch(() => response.sendStatus(500));
+    .catch((reason) => {
+      // traces errors for monitoring
+      functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
+      return response.sendStatus(500);
+    });
   })
   .catch((reason) => {
     // traces errors for monitoring
-    functions.logger.error("[ERROR] Error happened in /link: ", reason);
+    functions.logger.error("[ERROR] Error calling Strava /oauth/token: ", reason);
     return response.sendStatus(400);
   })
+});
+
+/**
+ * @function  unlink
+ * @link      /health-to-earn/us-central1/unlink
+ *
+ * Optional Step of the dHealth <> Strava link process.
+ *
+ * This request handler handles the callback of a
+ * cancellation of link between a Strava account and
+ * a dHealth address.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+export const unlink = functions.https.onRequest((request: any, response: any) => {
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /unlink request with query: ", request.query);
+
+  //XXX use refreshToken to get accessToken
+  //XXX use accessToken to GET /athlete
+  //XXX remove database `address` value
+
+  return response.sendStatus(501);
 });
 
 /**
@@ -143,7 +194,7 @@ export const link = functions.https.onRequest((request: any, response: any) => {
  */
 export const subscribe = functions.https.onRequest((request, response) => {
   // traces calls for monitoring
-  functions.logger.log("[DEBUG] Now handling /subscribe request with query: ", request.query);
+  functions.logger.log("[DEBUG] Now handling /subscribe request");
 
   const stravaConf = functions.config().strava;
   axios.post('https://www.strava.com/api/v3/push_subscriptions', {
@@ -155,13 +206,34 @@ export const subscribe = functions.https.onRequest((request, response) => {
   .then((res) => {
     return response
       .status(200)
-      .send(res.data);
+      .json(res.data);
   })
   .catch((reason) => {
     // traces errors for monitoring
-    functions.logger.error("[ERROR] Subscription error happened: ", reason);
+    functions.logger.error("[ERROR] Error happened calling Strava /push_subscriptions: ", reason);
     return response.sendStatus(400);
   });
+});
+
+/**
+ * @function  unsubscribe
+ * @link      /health-to-earn/us-central1/unsubscribe
+ *
+ * Optional Step of the dHealth <> Strava link process.
+ *
+ * This request handler handles the callback of a
+ * cancellation of subscription for Webhooks on a
+ * Strava account.  The user will not receive any
+ * more rewards after being unsubscribed.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+export const unsubscribe = functions.https.onRequest((request: any, response: any) => {
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /unsubscribe request with query: ", request.query);
+  return response.sendStatus(501);
 });
 
 /**
@@ -190,6 +262,59 @@ export const webhook = functions.https.onRequest((request: any, response: any) =
 
   // bails out on invalid requests
   return response.sendStatus(403);
+});
+
+/**
+ * @function  status
+ * @link      /health-to-earn/us-central1/status
+ *
+ * Step 0 of the dHealth <> Strava link process.
+ *
+ * This request handler handles status  requests
+ * to find out whether an account link should be
+ * done or whether the link already exists.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+export const status = functions.https.onRequest((request: any, response: any) => {
+  // proxies over to correct request handler
+  if (request.method !== 'GET') {
+    return response.sendStatus(403);
+  }
+
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /status request with query: ", request.query);
+
+  // param `dhealth.address` is obligatory
+  const data = request.query;
+  if (!('dhealth.address' in data)) {
+    return response.sendStatus(400);
+  }
+
+  // parses address to validate content or bail out
+  try { Address.createFromRawAddress(data['dhealth.address']) }
+  catch (e) { return response.sendStatus(400); }
+
+  // finds user by address
+  const users = DATABASE.collection('users');
+  users.where('address', '==', data['dhealth.address'])
+    .get()
+    .then((user: any) => {
+      if (user.exists) {
+        // 200 - OK
+        return response.sendStatus(200);
+      }
+
+      // 404 - Not Found
+      return response.sendStatus(404);
+    })
+    .catch((reason) => {
+      // traces errors for monitoring
+      functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
+      return response.sendStatus(500);
+    });
 });
 /// end-region cloud functions
 
@@ -227,7 +352,7 @@ const webhookSubscriptionHandler = (request: any, response: any) => {
   // SUCCESS, returns challenge
   return response
     .status(200)
-    .send({'hub.challenge': data['hub.challenge']});
+    .json({'hub.challenge': data['hub.challenge']});
 };
 
 /**

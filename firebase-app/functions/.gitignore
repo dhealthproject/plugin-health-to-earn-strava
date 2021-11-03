@@ -9,3 +9,4 @@ node_modules/
 
 # Secret runtime config
 .runtimeconfig.json
+.firebaseAuth.json

@@ -50,6 +50,12 @@ export default class HealthToEarn extends Vue {
   protected forkUrl: string = 'https://github.com/dhealthproject/plugin-health-to-earn-strava';
 
   /**
+   * The firebase app base URL.
+   * @var {string}
+   */
+  protected backendUrl: string = 'https://health-to-earn.web.app/health-to-earn/us-central1';
+
+  /**
    * The current signer address.
    * @var {Address}
    */
@@ -68,8 +74,25 @@ export default class HealthToEarn extends Vue {
       return '#';
     }
 
-    const baseUrl = 'https://health-to-earn.web.app/health-to-earn/us-central1/authorize';
-    return baseUrl + `?dhealth.address=${this.currentSigner.plain()}`;
+    const query = `?dhealth.address=${this.currentSigner.plain()}`;
+    return `${this.backendUrl}/authorize${query}`;
+  }
+
+  /**
+   * Getter for the `statusUrl` property. This value should
+   * contain the URL to a status callback that gets  polled
+   * to find out the status of an account link by requesting
+   * the backend (deployed as Firebase Cloud Functions).
+   *
+   * @returns {string}
+   */
+  get statusUrl(): string {
+    if (!this.currentSigner) {
+      return '#';
+    }
+
+    const query = `?dhealth.address=${this.currentSigner.plain()}`;
+    return `${this.backendUrl}/status${query}`;
   }
   /// end-region computed properties
 

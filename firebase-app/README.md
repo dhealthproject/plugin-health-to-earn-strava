@@ -26,6 +26,7 @@ Following components are defined and exported with this library:
 | `unsubscribe` | Webhook subscription cancellation handler that removes Webhook event handlers. |
 | `webhook` | Webhook callback handler. GET to verify a subscription ; POST to submit events. |
 | `status` | Status callback handler that produces a GET response depending on if an account is linked or not. |
+| `payout` | Cloud scheduler function that executes outstanding (unprocessed) payouts one at a time. |
 
 ## License
 

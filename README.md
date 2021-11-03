@@ -58,6 +58,20 @@ mv path/to/credential.json firebase-app/functions/.firebaseAuth.json
 
 :warning: Note that the path and filename `firebase-app/functions/.firebaseAuth.json` must be respected, otherwise Firebase will not allow to read and write in Firestore.
 
+### Strava webhook subscription
+
+After deploying the functions *for the first time*, a subscription must be created to enable Strava webhooks, a subscription can be created with the following command:
+
+```bash
+curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+      -F client_id=CID_HERE \
+      -F client_secret=SECRET_HERE \
+      -F 'callback_url=CALLBACK_URL_HERE' \
+      -F 'verify_token=TOKEN_HERE'
+```
+
+:warning: Please, replace `CID_HERE` with your Strava App Client ID and `SECRET_HERE` with your Strava App Client Secret. You can find your Strava Client ID and Client Secret pair in your Strava Dashboard under `My API Application`. Then, *generate a random* verification token and replace `TOKEN_HERE` with the randomly generate verification token. Finally, replace `CALLBACK_URL_HERE` with your Webhook URL, this must be the URL that handles Strava webhook events (i.e. /webhook cloud function).
+
 ## Development
 
 Cloud functions can be tested using a local deployment using the `firebase-app/functions/package.json`. But we first need to configure the local emulator's configuration with the following commands:
@@ -88,7 +102,24 @@ Alternatively, you can also deploy individual functions using - i.e. to deploy t
 
 :warning: Note that after you deployed the functions, you may have to update the [environment][#environment] configuration again and replace `OAUTH_URL` with the /authorize function URL, replace `SUBSCRIBE_URL_HERE` with the /subscribe function URL and replace `CALLBACK_URL_HERE` with the /webhook function URL.
 
-:warning: You must also update the **security rules** in Firestore such that it contains the content of `firebase-app/.rules`. This file opens reading operations to the public and writing operations are restricted to authenticated users.
+:warning: You must also update the **security rules** in Firestore such that it contains the content of `firebase-app/.rules`. This file opens reading operations to the public and writing operations are restricted to authenticated users. Deployment can be done with `firebase deploy --only firestore:rules`.
+
+## Webhook Endpoint
+
+Testing a newly deployed webhook event handler can be done with the below command. Please, note that this is using a test account for which the linked dHealth Account is a test account. The payout scheduler will/must never actually send funds to this address.
+
+```bash
+curl -X POST https://us-central1-health-to-earn.cloudfunctions.net/webhook \
+-H 'Content-Type: application/json' \
+-d '{
+      "aspect_type": "create",
+      "event_time": 1549560669,
+      "object_id": 6207413503,
+      "object_type": "activity",
+      "owner_id": 94380856,
+      "subscription_id": 204470
+    }'
+```
 
 ## License
 

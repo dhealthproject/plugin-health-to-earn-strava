@@ -9,6 +9,7 @@
  */
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import * as moment from 'moment';
 import axios from 'axios';
 import { Address } from '@dhealth/sdk';
 
@@ -131,21 +132,19 @@ export const link = functions.https.onRequest((request: any, response: any) => {
       linkedAt: new Date().valueOf(),
     }, { merge: true })
     .then((user: any) => {
-      // should link to /subscribe
-      const subscribeURL = stravaConf.subscribe_url;
 
-      // redirects the user to create a webhook subscription
-      response.redirect(301, subscribeURL);
+      //XXX display basic index.html with Thank you message
 
-      //XXX subscription only needed once? (not per-user)
+      // ends the link process
+      return response.sendStatus(200);
     })
-    .catch((reason) => {
+    .catch((reason: any) => {
       // traces errors for monitoring
-      functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
+      functions.logger.error("[ERROR] Error happened with Firestore saving users entry: ", reason);
       return response.sendStatus(500);
     });
   })
-  .catch((reason) => {
+  .catch((reason: any) => {
     // traces errors for monitoring
     functions.logger.error("[ERROR] Error calling Strava /oauth/token: ", reason);
     return response.sendStatus(400);
@@ -178,65 +177,6 @@ export const unlink = functions.https.onRequest((request: any, response: any) =>
 });
 
 /**
- * @function  subscribe
- * @link      /health-to-earn/us-central1/subscribe
- *
- * Step 3 of the dHealth <> Strava link process.
- *
- * This request handler handles the creation of a
- * webhook subscription for Strava. Afterwards, a
- * request from Strava will be issued using a GET
- * request to the /webhook cloud function.
- *
- * @params    {Request}   request
- * @params    {Response}  response
- * @returns   {void}
- */
-export const subscribe = functions.https.onRequest((request, response) => {
-  // traces calls for monitoring
-  functions.logger.log("[DEBUG] Now handling /subscribe request");
-
-  const stravaConf = functions.config().strava;
-  axios.post('https://www.strava.com/api/v3/push_subscriptions', {
-    client_id: stravaConf.client_id,
-    client_secret: stravaConf.client_secret,
-    callback_url: stravaConf.webhook_url,
-    verify_token: stravaConf.verify_token,
-  })
-  .then((res) => {
-    return response
-      .status(200)
-      .json(res.data);
-  })
-  .catch((reason) => {
-    // traces errors for monitoring
-    functions.logger.error("[ERROR] Error happened calling Strava /push_subscriptions: ", reason);
-    return response.sendStatus(400);
-  });
-});
-
-/**
- * @function  unsubscribe
- * @link      /health-to-earn/us-central1/unsubscribe
- *
- * Optional Step of the dHealth <> Strava link process.
- *
- * This request handler handles the callback of a
- * cancellation of subscription for Webhooks on a
- * Strava account.  The user will not receive any
- * more rewards after being unsubscribed.
- *
- * @params    {Request}   request
- * @params    {Response}  response
- * @returns   {void}
- */
-export const unsubscribe = functions.https.onRequest((request: any, response: any) => {
-  // traces calls for monitoring
-  functions.logger.log("[DEBUG] Now handling /unsubscribe request with query: ", request.query);
-  return response.sendStatus(501);
-});
-
-/**
  * @function  webhook
  * @link      /health-to-earn/us-central1/webhook
  *
@@ -251,13 +191,14 @@ export const unsubscribe = functions.https.onRequest((request: any, response: an
  * @params    {Response}  response
  * @returns   {void}
  */
-export const webhook = functions.https.onRequest((request: any, response: any) => {
+export const webhook = functions.https.onRequest(async (request: any, response: any) => {
   // proxies over to correct request handler
   if (request.method === 'GET') {
     return webhookSubscriptionHandler(request, response);
   }
   else if (request.method === 'POST') {
-    return webhookEventHandler(request, response);
+    // @async event handler
+    return await webhookEventHandler(request, response);
   }
 
   // bails out on invalid requests
@@ -310,13 +251,110 @@ export const status = functions.https.onRequest((request: any, response: any) =>
       // 404 - Not Found
       return response.sendStatus(404);
     })
-    .catch((reason) => {
+    .catch((reason: any) => {
       // traces errors for monitoring
       functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
       return response.sendStatus(500);
     });
 });
+
+/**
+ * @function  subscribe
+ * @link      /health-to-earn/us-central1/subscribe
+ *
+ * One-time only Step of the dHealth <> Strava link process.
+ *
+ * This request handler handles the creation of a
+ * webhook subscription for Strava. Afterwards, a
+ * request from Strava will be issued using a GET
+ * request to the /webhook cloud function.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+ export const subscribe = functions.https.onRequest((request, response) => {
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /subscribe request");
+
+  const stravaConf = functions.config().strava;
+  axios.post('https://www.strava.com/api/v3/push_subscriptions', {
+    client_id: stravaConf.client_id,
+    client_secret: stravaConf.client_secret,
+    callback_url: stravaConf.webhook_url,
+    verify_token: stravaConf.verify_token,
+  })
+  .then((res) => {
+    return response
+      .status(200)
+      .json(res.data);
+  })
+  .catch((reason) => {
+    // traces errors for monitoring
+    functions.logger.error("[ERROR] Error happened calling Strava /push_subscriptions: ", reason);
+    return response.sendStatus(400);
+  });
+});
+
+/**
+ * @function  unsubscribe
+ * @link      /health-to-earn/us-central1/unsubscribe
+ *
+ * Optional Step of the dHealth <> Strava link process.
+ *
+ * This request handler handles the callback of a
+ * cancellation of subscription for Webhooks on a
+ * Strava account.  The user will not receive any
+ * more rewards after being unsubscribed.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+export const unsubscribe = functions.https.onRequest((request: any, response: any) => {
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /unsubscribe request with query: ", request.query);
+  return response.sendStatus(501);
+});
 /// end-region cloud functions
+
+/// region cloud scheduler functions
+/**
+ * @function  payout
+ * @link      /health-to-earn/us-central1/payout
+ *
+ * This request handler **schedules** a job to run
+ * every 20 seconds.  The job checks whether there
+ * are  any rewards to be paid out  and marks them 
+ * as processed.
+ *
+ * Caution: This method **must not** be  run using
+ * a different system than the cloud scheduler, ie.
+ * do not allow the execution of this function with
+ * HTTP endpoint calls.
+ *
+ * @async
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {null|number}         Integer return marks error.
+ */
+export const payout = functions.pubsub.schedule('every 1 minutes').onRun(async (context) => {
+  // finds unprocessed rewards
+  const snapshot: any = await DATABASE.collection('rewards')
+    .where('isProcessed', '==', false)
+    .get();
+
+  // bails out on empty rewards list
+  if (snapshot.empty) {
+    return null;
+  }
+
+  functions.logger.log("[DEBUG] Found non-zero unprocessed rewards count: ", snapshot.length);
+  //XXX proceed to payout
+  return null;
+});
+
+/// end-region cloud scheduler functions
 
 /// region private API
 /**
@@ -361,11 +399,12 @@ const webhookSubscriptionHandler = (request: any, response: any) => {
  * This method handles incoming Strava activities and other
  * events pushed by Strava on the webhook subscription.
  *
+ * @async
  * @param   {Request}   request 
  * @param   {Response}  response 
  * @returns {Response}
  */
- const webhookEventHandler = (request: any, response: any) => {
+const webhookEventHandler = async (request: any, response: any) => {
   // traces calls for monitoring
   functions.logger.log("[DEBUG] Now handling /webhook POST request with body: ", request.body);
 
@@ -383,21 +422,59 @@ const webhookSubscriptionHandler = (request: any, response: any) => {
     return response.status(200).send('EVENT_IGNORED');
   }
 
-  // traces valid webhook events
-  functions.logger.log("[DEBUG] Identified activity: ", data);
+  // ------
+  // Step 0: The webhook handler is **tried**
+  try {
 
-  // searches the user by it's Strava id
-  DATABASE.doc(`users/${data['owner_id']}`)
-    .get()
-    .then((doc: any) => {
+    // ------
+    // Step 1: searches the user by it's Strava id
+    const user: any = await DATABASE.doc(`users/${data['owner_id']}`).get();
 
-      functions.logger.log("[DEBUG] Found user: ", doc);
-      //XXX extract address and send DHP
+    // bails out for unknown users
+    if (! user.exists) {
+      return response.status(200).send('EVENT_IGNORED');
+    }
 
-      return response
-        .status(200)
-        .send('EVENT_RECEIVED');
-    })
-    .catch(() => response.status(200).send('EVENT_IGNORED'));
+    // prepares rewards entry
+    const rewardedDate = new Date();
+    const formattedDate = moment(rewardedDate).format('YYYYMMDD');
+    const address = user.data().address;
+    const athleteId = user.data().athleteId;
+    const activityId = data['object_id']; // from Strava
+
+    // index uses date-only and athlete id (one per day).
+    // e.g. "20211103-94380856"
+    const rewardsId = `${formattedDate}-${athleteId}`;
+
+    // ------
+    // Step 2: checks if there is already a rewards entry for today
+    const reward: any = await DATABASE.doc(`rewards/${rewardsId}`).get();
+
+    // bails out given existing rewards entry
+    if (reward.exists) {
+      return response.status(200).send('EVENT_IGNORED');
+    }
+
+    // ------
+    // Step 3: saves `rewards` entry (unprocessed / incomplete)
+    await DATABASE.collection('rewards').doc(rewardsId).set({
+      address,
+      athleteId,
+      activityId,
+      isProcessed: false,
+      isConfirmed: false,
+      rewardDay: formattedDate,
+      activityAt: moment(rewardedDate).format('YYYY-MM-DD HH:mm:ss Z'),
+    }, { merge: true });
+
+    // Job Successful
+    return response.status(200).send('EVENT_RECEIVED');
+  }
+  catch (reason) {
+    functions.logger.error("[ERROR] Error happened with /POST webhook handler: ", ('' + reason));
+
+    // Webhook response **must be** 200 (risk of ban @Strava)
+    return response.status(200).send('EVENT_IGNORED');
+  }
 };
 /// end-region private API

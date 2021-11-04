@@ -14,6 +14,35 @@ Health to Earn with Strava is a showcase to earn `dhealth.dhp` on [dHealth Netwo
 - [Development](#development)
 - [Licensing](#license)
 
+## Sequence diagram
+
+```
+                      |----------------|
+                      | dHealth Wallet |
+                      |----------------|
+                              |
+                      |----------------|
+                  ____| Strava OAuth   |____
+                  |   |----------------|   |
+                  |                        |
+            |------------|            |--------|     |------|
+            | Authorized |            | Denied |---->| Done |
+            |------------|            |--------|     |------|
+                  |
+          |-------------------|     |--------------|
+          | onActivityCreated |---->| isFirst(24h) |
+          |-------------------|     |--------------|
+                                           |
+                          |-----|          |          |-----|     |------|
+                          | Yes |----------|----------| No  |---->| Done |
+                          |-----|                     |-----|     |------|
+                             |
+                             |
+                    |-------------------|
+                    | Send NDAPP Reward |
+                    |-------------------|
+```
+
 ## Components found here
 
 Following components are defined and exported with this library:
@@ -110,8 +139,8 @@ Testing a newly deployed webhook event handler can be done with the below comman
 
 ```bash
 curl -X POST https://us-central1-health-to-earn.cloudfunctions.net/webhook \
--H 'Content-Type: application/json' \
--d '{
+  -H 'Content-Type: application/json' \
+  -d '{
       "aspect_type": "create",
       "event_time": 1549560669,
       "object_id": 6207413503,

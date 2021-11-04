@@ -2,6 +2,7 @@
   "networkIdentifier": 104,
   "epochAdjustment": 1616978397,
   "generationHash": "ED5761EA890A096C50D3F50B7C2F0CCB4B84AFC9EA870F381E84DDE36D04EF16",
+  "currencyMosaicId": "39E0C49FA322A459",
   "nodes": [
     "http://dual-01.dhealth.cloud:3000",
     "http://dual-02.dhealth.cloud:3000",

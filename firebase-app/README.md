@@ -22,8 +22,6 @@ Following components are defined and exported with this library:
 | `authorize` | Authorization handler that takes `dhealth.address` to start Strava OAuth process. |
 | `link` | Token exchange handler that requests a `authorization_code` from Strava and redirects to `subscribe`. |
 | `unlink` | Cancellation handler that unlinks an address from a Strava account. |
-| `subscribe` | Webhook subscription creation handler that authorizes new Webhook events. |
-| `unsubscribe` | Webhook subscription cancellation handler that removes Webhook event handlers. |
 | `webhook` | Webhook callback handler. GET to verify a subscription ; POST to submit events. |
 | `status` | Status callback handler that produces a GET response depending on if an account is linked or not. |
 | `payout` | Cloud scheduler function that executes outstanding (unprocessed) payouts one at a time. |

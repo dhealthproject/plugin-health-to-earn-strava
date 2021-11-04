@@ -18,7 +18,7 @@ import {
   Address,
   Deadline,
   Mosaic,
-  NamespaceId,
+  MosaicId,
   PlainMessage,
   SignedTransaction,
   TransactionHttp,
@@ -49,6 +49,59 @@ const NDAPP = Account.createFromPrivateKey(
 );
 
 /// region cloud functions
+/**
+ * @function  status
+ * @link      /health-to-earn/us-central1/status
+ *
+ * Step 0 of the dHealth <> Strava link process.
+ *
+ * This request handler handles status  requests
+ * to find out whether an account link should be
+ * done or whether the link already exists.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+ export const status = functions.https.onRequest((request: any, response: any) => {
+  // proxies over to correct request handler
+  if (request.method !== 'GET') {
+    return response.sendStatus(403);
+  }
+
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /status request with query: ", request.query);
+
+  // param `dhealth.address` is obligatory
+  const data = request.query;
+  if (!('dhealth.address' in data)) {
+    return response.sendStatus(400);
+  }
+
+  // parses address to validate content or bail out
+  try { Address.createFromRawAddress(data['dhealth.address']) }
+  catch (e) { return response.sendStatus(400); }
+
+  // finds user by address
+  const users = DATABASE.collection('users');
+  users.where('address', '==', data['dhealth.address'])
+    .get()
+    .then((user: any) => {
+      if (user.exists) {
+        // 200 - OK
+        return response.sendStatus(200);
+      }
+
+      // 404 - Not Found
+      return response.sendStatus(404);
+    })
+    .catch((reason: any) => {
+      // traces errors for monitoring
+      functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
+      return response.sendStatus(500);
+    });
+});
+
 /**
  * @function  authorize
  * @link      /health-to-earn/us-central1/authorize
@@ -201,7 +254,7 @@ export const unlink = functions.https.onRequest((request: any, response: any) =>
  * @function  webhook
  * @link      /health-to-earn/us-central1/webhook
  *
- * Step 4 of the dHealth <> Strava link process.
+ * Step 3 of the dHealth <> Strava link process.
  *
  * This request handler handles the creation of a
  * webhook subscription for Strava and the follow
@@ -226,118 +279,6 @@ export const webhook = functions.https.onRequest(async (request: any, response: 
 
   // bails out on invalid requests
   return response.sendStatus(403);
-});
-
-/**
- * @function  status
- * @link      /health-to-earn/us-central1/status
- *
- * Step 0 of the dHealth <> Strava link process.
- *
- * This request handler handles status  requests
- * to find out whether an account link should be
- * done or whether the link already exists.
- *
- * @params    {Request}   request
- * @params    {Response}  response
- * @returns   {void}
- */
-export const status = functions.https.onRequest((request: any, response: any) => {
-  // proxies over to correct request handler
-  if (request.method !== 'GET') {
-    return response.sendStatus(403);
-  }
-
-  // traces calls for monitoring
-  functions.logger.log("[DEBUG] Now handling /status request with query: ", request.query);
-
-  // param `dhealth.address` is obligatory
-  const data = request.query;
-  if (!('dhealth.address' in data)) {
-    return response.sendStatus(400);
-  }
-
-  // parses address to validate content or bail out
-  try { Address.createFromRawAddress(data['dhealth.address']) }
-  catch (e) { return response.sendStatus(400); }
-
-  // finds user by address
-  const users = DATABASE.collection('users');
-  users.where('address', '==', data['dhealth.address'])
-    .get()
-    .then((user: any) => {
-      if (user.exists) {
-        // 200 - OK
-        return response.sendStatus(200);
-      }
-
-      // 404 - Not Found
-      return response.sendStatus(404);
-    })
-    .catch((reason: any) => {
-      // traces errors for monitoring
-      functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
-      return response.sendStatus(500);
-    });
-});
-
-/**
- * @function  subscribe
- * @link      /health-to-earn/us-central1/subscribe
- *
- * One-time only Step of the dHealth <> Strava link process.
- *
- * This request handler handles the creation of a
- * webhook subscription for Strava. Afterwards, a
- * request from Strava will be issued using a GET
- * request to the /webhook cloud function.
- *
- * @params    {Request}   request
- * @params    {Response}  response
- * @returns   {void}
- */
- export const subscribe = functions.https.onRequest((request, response) => {
-  // traces calls for monitoring
-  functions.logger.log("[DEBUG] Now handling /subscribe request");
-
-  const stravaConf = functions.config().strava;
-  axios.post('https://www.strava.com/api/v3/push_subscriptions', {
-    client_id: stravaConf.client_id,
-    client_secret: stravaConf.client_secret,
-    callback_url: stravaConf.webhook_url,
-    verify_token: stravaConf.verify_token,
-  })
-  .then((res) => {
-    return response
-      .status(200)
-      .json(res.data);
-  })
-  .catch((reason) => {
-    // traces errors for monitoring
-    functions.logger.error("[ERROR] Error happened calling Strava /push_subscriptions: ", reason);
-    return response.sendStatus(400);
-  });
-});
-
-/**
- * @function  unsubscribe
- * @link      /health-to-earn/us-central1/unsubscribe
- *
- * Optional Step of the dHealth <> Strava link process.
- *
- * This request handler handles the callback of a
- * cancellation of subscription for Webhooks on a
- * Strava account.  The user will not receive any
- * more rewards after being unsubscribed.
- *
- * @params    {Request}   request
- * @params    {Response}  response
- * @returns   {void}
- */
-export const unsubscribe = functions.https.onRequest((request: any, response: any) => {
-  // traces calls for monitoring
-  functions.logger.log("[DEBUG] Now handling /unsubscribe request with query: ", request.query);
-  return response.sendStatus(501);
 });
 /// end-region cloud functions
 
@@ -549,15 +490,21 @@ const broadcastRewardPayout = (reward: any) => {
   const skewer = new SkewNormalDistribution(0.8);
   const amountDHP = skewer.value;
 
+  // prepares attached mosaic
+  const mosaics: Mosaic[] = [];
+  mosaics.push(new Mosaic(
+    new MosaicId(NETWORK.currencyMosaicId),
+    UInt64.fromUint(amountDHP),
+  ));
+
   // prepares a dHealth network transaction
   const transaction = TransferTransaction.create(
     Deadline.create(NETWORK.epochAdjustment),
     Address.createFromRawAddress(recipient),
-    [
-      new Mosaic(new NamespaceId('dhealth.dhp'), UInt64.fromUint(amountDHP))
-    ],
+    mosaics,
     PlainMessage.create(reward.data().rewardDay),
-    NETWORK.networkIdentifier
+    NETWORK.networkIdentifier,
+    UInt64.fromUint(20000), // 0.020000 DHP
   );
 
   // signs and broadcasts the transaction
@@ -576,7 +523,7 @@ const broadcastRewardPayout = (reward: any) => {
   functions.logger.log(`[DEBUG] Using node ${nodeUrl} for broadcasting reward of ${reward.id}`);
 
   // updates firestore entry
-  reward.update({
+  DATABASE.collection('rewards').doc(reward.id).update({
     isProcessed: true,
     transactionHash: signedTransaction.hash,
     transactionByte: signedTransaction.payload,

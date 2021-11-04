@@ -7,11 +7,27 @@
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
+// external dependencies
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as moment from 'moment';
 import axios from 'axios';
-import { Address } from '@dhealth/sdk';
+import { delay } from 'rxjs/operators';
+import {
+  Account,
+  Address,
+  Deadline,
+  Mosaic,
+  NamespaceId,
+  PlainMessage,
+  SignedTransaction,
+  TransactionHttp,
+  TransferTransaction,
+  UInt64,
+} from '@dhealth/sdk';
+
+// internal dependencies
+import { SkewNormalDistribution } from './math';
 
 // /!\ CAUTION /!\ 
 // /!\ reads service account
@@ -25,7 +41,12 @@ admin.initializeApp({
 });
 
 // shortcuts
+const NETWORK = require('../config/network.json');
 const DATABASE = admin.firestore();
+const NDAPP = Account.createFromPrivateKey(
+  functions.config().dhealth.account.secret,
+  NETWORK.networkIdentifier,
+);
 
 /// region cloud functions
 /**
@@ -187,6 +208,8 @@ export const unlink = functions.https.onRequest((request: any, response: any) =>
  * -up steps whenever an activity is created in a
  * Strava account linked to this app.
  *
+ * @see {webhookSubscriptionHandler}
+ * @see {webhookEventHandler}
  * @params    {Request}   request
  * @params    {Response}  response
  * @returns   {void}
@@ -349,8 +372,18 @@ export const payout = functions.pubsub.schedule('every 1 minutes').onRun(async (
     return null;
   }
 
-  functions.logger.log("[DEBUG] Found non-zero unprocessed rewards count: ", snapshot.length);
-  //XXX proceed to payout
+  // traces unprocessed rewards found
+  functions.logger.log("[DEBUG] Found non-zero unprocessed rewards count: ", snapshot.size);
+
+  // proceeds to payout for each unprocessed reward with delay of 1000ms
+  snapshot.forEach((r: any) => broadcastRewardPayout(r).pipe(delay(1000)).subscribe(
+    (res: any) => functions.logger.log(
+      `[DEBUG] Successfully broadcast transaction for ${r.id}`
+    ),
+    (err: any) => functions.logger.error(
+      `[ERROR] Could not broadcast transaction for ${r.id}, reason: ${err}`
+    ),
+  ));
   return null;
 });
 
@@ -362,6 +395,10 @@ export const payout = functions.pubsub.schedule('every 1 minutes').onRun(async (
  *
  * This method verifies the format of the request payload
  * and returns a 200 success response with the challenge.
+ *
+ * You can call this handler to verify the availability of 
+ * your webhook handler.   Strava calls this endpoint upon
+ * creation of a new webhook subscription (once per app).
  *
  * @param   {Request}   request 
  * @param   {Response}  response 
@@ -397,7 +434,18 @@ const webhookSubscriptionHandler = (request: any, response: any) => {
  * Request handler for POST requests to the cloud function.
  *
  * This method handles incoming Strava activities and other
- * events pushed by Strava on the webhook subscription.
+ * events pushed by Strava on the webhook subscription. The
+ * handler stores an entry in `rewards` in case the account
+ * created an activity for the first time  on the exact day
+ * of the execution.
+ *
+ * The HTTP response being sent **always** has a 200 status
+ * code, this is to avoid being banned by Strava for errors
+ * on the callback_url.
+ *
+ * A message of `EVENT_RECEIVED` will be added as  response
+ * in case the event generates a reward. In all other cases
+ * a message of `EVENT_IGNORED` wil be added as a response.
  *
  * @async
  * @param   {Request}   request 
@@ -477,4 +525,65 @@ const webhookEventHandler = async (request: any, response: any) => {
     return response.status(200).send('EVENT_IGNORED');
   }
 };
+
+/**
+ * Loop handler which executes reward payouts using dHealth
+ * Network for a `rewards`  entry as provided in \a reward.
+ *
+ * This method uses a {@link SkewNormalDistribution}  class
+ * to generate the amount that will be sent to the rewarded
+ * user.
+ *
+ * The signed transaction is broadcast using a node of  the
+ * list in `NETWORK.nodes`.
+ *
+ * @see {SkewNormalDistribution}
+ * @param     {any}   reward      The rewards entry (Firestore).
+ * @returns   {void}
+ */
+const broadcastRewardPayout = (reward: any) => {
+  // uses the user's dHealth address
+  const recipient = reward.data().address;
+
+  // uses skew-normal distribution to get amount
+  const skewer = new SkewNormalDistribution(0.8);
+  const amountDHP = skewer.value;
+
+  // prepares a dHealth network transaction
+  const transaction = TransferTransaction.create(
+    Deadline.create(NETWORK.epochAdjustment),
+    Address.createFromRawAddress(recipient),
+    [
+      new Mosaic(new NamespaceId('dhealth.dhp'), UInt64.fromUint(amountDHP))
+    ],
+    PlainMessage.create(reward.data().rewardDay),
+    NETWORK.networkIdentifier
+  );
+
+  // signs and broadcasts the transaction
+  const signedTransaction: SignedTransaction = NDAPP.sign(
+    transaction,
+    NETWORK.generationHash,
+  );
+
+  // picks a *random* node of the list
+  const N = NETWORK.nodes.length;
+  const i = Math.floor(Math.random() * (N - 1 + 1)) + 1;
+  const nodeUrl = NETWORK.nodes[i];
+
+  // traces scheduler configuration
+  functions.logger.log(`[DEBUG] Signed transaction for ${reward.id} with hash: ${signedTransaction.hash}`);
+  functions.logger.log(`[DEBUG] Using node ${nodeUrl} for broadcasting reward of ${reward.id}`);
+
+  // updates firestore entry
+  reward.update({
+    isProcessed: true,
+    transactionHash: signedTransaction.hash,
+    transactionByte: signedTransaction.payload,
+    transactionNode: nodeUrl,
+  });
+
+  // uses transaction repository to broadcast
+  return (new TransactionHttp(nodeUrl)).announce(signedTransaction);
+}
 /// end-region private API

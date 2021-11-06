@@ -154,7 +154,8 @@ export const authorize = functions.https.onRequest((request: any, response: any)
  * Step 2 of the dHealth <> Strava link process.
  *
  * This request handler handles the callback of an
- * authorization of an app in Strava (Token Exchange).
+ * authorization of an app in Strava (Token Exchange)
+ * and redirects the user to a thank you page.
  *
  * @see https://developers.strava.com/docs/authentication/#token-exchange
  * @params    {Request}   request
@@ -206,11 +207,10 @@ export const link = functions.https.onRequest((request: any, response: any) => {
       linkedAt: new Date().valueOf(),
     }, { merge: true })
     .then((user: any) => {
-
-      //XXX display basic index.html with Thank you message
-
       // ends the link process
-      return response.sendStatus(200);
+      return response.redirect(301,
+        'https://health-to-earn.web.app/link.html'
+      );
     })
     .catch((reason: any) => {
       // traces errors for monitoring

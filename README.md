@@ -124,7 +124,9 @@ This will deploy the cloud functions at the following URL: `http://localhost:500
 Cloud functions can be deployed to Firebase using the following command: 
 
 ```bash
+firebase deploy --only firestore:rules
 firebase deploy --only functions
+firebase deploy --only hosting
 ```
 
 Alternatively, you can also deploy individual functions using - i.e. to deploy the cloud function `status`, you would execute the command: `firebase deploy --only functions:status`.

@@ -8,7 +8,7 @@
  * @license     LGPL-3.0
  */
 import Vue from 'vue';
-import { Address } from '@dhealth/sdk';
+import { Address, RepositoryFactoryConfig, RepositoryFactoryHttp } from '@dhealth/sdk';
 import { PluginBridge } from '@dhealth/wallet-api-bridge';
 
 /**
@@ -27,6 +27,35 @@ export class WalletService {
   public constructor(protected readonly $app?: Vue) {}
 
   /**
+   * This method reads the repository factory from the Vuex app store
+   * to be able to use the network connection.
+   *
+   * @async
+   * @returns {Promise<RepositoryFactoryHttp>}
+   */
+  public async getRepositoryFactory(): Promise<RepositoryFactoryHttp> {
+    // Uses IPC to get repository factory from app store (Vuex)
+    const networkBus = await PluginBridge.StoreActionRequest(
+      '@dhealth/plugin-health-to-earn-strava',
+      PluginBridge.PluginPermissionType.Getter,
+      'network/repositoryFactory',
+    );
+
+    const info: any = networkBus.response;
+    console.log("repository factory from IPC: ", info);
+
+    try {
+      return await new RepositoryFactoryHttp(info.url, {
+        websocketInjected: WebSocket,
+        websocketUrl: info.websocketUrl,
+      } as RepositoryFactoryConfig);
+    }
+    catch(e) {
+      throw new Error(`Connection to endpoint "${info.url}" could not be established. Reason: ${e.toString()}`);
+    }
+  }
+
+  /**
    * Requests the current signer from the Wallet IPC.
    *
    * @returns {Promise<Address>}
@@ -40,6 +69,8 @@ export class WalletService {
     );
 
     const info: any = networkBus.response;
+    console.log("current signer from IPC: ", info);
+
     return Address.createFromRawAddress(info.address);
   }
   /// end-region public API

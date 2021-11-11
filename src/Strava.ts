@@ -9,28 +9,15 @@
  */
 import Vue, { VueConstructor } from "vue";
 
-// vee-validate extension
-import { extend } from 'vee-validate';
-import { digits, excluded, integer, is, is_not, max_value, max, min_value, min, regex, required } from 'vee-validate/dist/rules';
-extend('digits', digits);
-extend('excluded', excluded);
-extend('integer', integer);
-extend('is', is);
-extend('is_not', is_not);
-extend('max_value', max_value);
-extend('max', max);
-extend('min_value', min_value);
-extend('min', min);
-extend('regex', regex);
-extend('required', required);
-
 // internal dependencies
 // child components
 import HealthToEarn from "./views/pages/HealthToEarn/HealthToEarn.vue";
+import RewardsDashboard from "./views/pages/RewardsDashboard/RewardsDashboard.vue";
 
 /// region components library
 const components: { [s: string]: VueConstructor } = {
   HealthToEarn,
+  RewardsDashboard,
 };
 
 export const registerComponents = (): { [s: string]: VueConstructor } => {
@@ -65,6 +52,13 @@ export default {
   settings: [],
 
   permissions: [
+    {
+      name: "HealthToEarnStrava.getRepositoryFactory",
+      type: "getter",
+      target: "network/repositoryFactory",
+      description:
+        "This permission is requested to fetch the blockchain network data.",
+    },
     {
       name: "HealthToEarnStrava.getCurrentSignerAddress",
       type: "getter",

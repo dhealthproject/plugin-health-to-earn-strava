@@ -12,15 +12,49 @@
 <template>
   <div class="dhealth-plugin-health-to-earn-container">
     <div class="dashboard-left-container">
-      <p>
-        <a :href="authorizeUrl" target="_blank">Authorize now</a>
-      </p>
+
+      <div class="health-to-earn-container">
+        <NavigationLinks
+          :direction="'horizontal'"
+          :items="['Health to Earn']"
+          :current-item-index="activeSubpage"
+          @selected="(i) => (activeSubpage = i)"
+        />
+
+        <div v-if="activeSubpage === subpageIndexes['healthToEarn']" class="subpage-field">
+          <RewardsDashboard
+            v-if="!isLoadingWallet"
+            :account="currentSigner"
+            :factory="repositoryFactory"
+          />
+        </div>
+      </div>
+      <div class="health-to-earn-footer">
+        <p class="text-miniature">
+          <i>Disclaimer: This showcase is presented by dHealth Network and <b>does not</b> make the object of any partnership or cooperation between dHealth and Strava&trade;.</i>
+        </p>
+      </div>
     </div>
     <div class="dashboard-right-container">
       <div class="title">
         <span class="title_txt">{{ 'Plugin details' }}</span>
       </div>
-      <p>This plugin lets you connect to your Strava account and be rewarded in DHP for daily activities on Strava!</p>
+      <p>
+        This plugin illustrates a Strava&trade; integration with dHealth Network in a Health-to-Earn showcase. 
+      </p>
+      <p>
+        This dapp distributes rewards directly to your dHealth Wallet for activities completed on Strava&trade;. 
+      </p>
+      <p>
+        Authorize our Strava App and start earning DHP for your daily activities.
+      </p>
+
+      <hr class="separator" />
+
+      <p>
+        As this showcase is open source, don't hesitate to make your own social integrations with dHealth Network!
+      </p>
+      <p class="mt40" style="text-align: center;"><a href="https://health-to-earn.web.app" target="_blank">Website</a></p>
 
       <a
         class="github-fork-ribbon right-bottom"
@@ -34,13 +68,20 @@
 
 <script lang="ts">
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { Address } from '@dhealth/sdk';
+import { Address, RepositoryFactoryHttp } from '@dhealth/sdk';
+import { NavigationLinks } from '@dhealth/wallet-components';
 
 // internal dependencies
 import { WalletService } from '../../../services/WalletService';
 
+// internal child components
+import RewardsDashboard from '../RewardsDashboard/RewardsDashboard.vue';
+
 @Component({
-  components: {}
+  components: {
+    NavigationLinks,
+    RewardsDashboard,
+  }
 })
 export default class HealthToEarn extends Vue {
   /**
@@ -50,10 +91,10 @@ export default class HealthToEarn extends Vue {
   protected forkUrl: string = 'https://github.com/dhealthproject/plugin-health-to-earn-strava';
 
   /**
-   * The firebase app base URL.
-   * @var {string}
+   * The blockchain network repository factory.
+   * @var {RepositoryFactoryHttp}
    */
-  protected backendUrl: string = 'https://health-to-earn.web.app/health-to-earn/us-central1';
+  protected repositoryFactory: RepositoryFactoryHttp;
 
   /**
    * The current signer address.
@@ -61,38 +102,49 @@ export default class HealthToEarn extends Vue {
    */
   protected currentSigner: Address;
 
+  /**
+   * List of available subpages.
+   * @var {{[k: string]: number}}
+   */
+  protected subpageIndexes: { [k: string]: number } = {
+    healthToEarn: 0,
+  };
+
+  /**
+   * The currently selected subpage.
+   * @var {number}
+   */
+  protected selectedSubpage: number = 0;
+
+  /**
+   * Whether the component is currently loading
+   * the wallet information.
+   * @var {boolean}
+   */
+  protected isLoadingWallet: boolean = true;
+
   /// region computed properties
   /**
-   * Getter for the `authorizeUrl` property. This value should
-   * contain the URL to an authorization callback  redirecting
-   * to the Strava /oauth/authorize route.
-   *
-   * @returns {string}
+   * Getter for the currently active subpage.
+   * @returns {number}
    */
-  get authorizeUrl(): string {
-    if (!this.currentSigner) {
-      return '#';
-    }
-
-    const query = `?dhealth.address=${this.currentSigner.plain()}`;
-    return `${this.backendUrl}/authorize${query}`;
+  public get activeSubpage() {
+    return this.selectedSubpage;
   }
 
   /**
-   * Getter for the `statusUrl` property. This value should
-   * contain the URL to a status callback that gets  polled
-   * to find out the status of an account link by requesting
-   * the backend (deployed as Firebase Cloud Functions).
+   * Setter for the currently active subpage.
    *
-   * @returns {string}
+   * @param   {number}  index
+   * @returns {void}
    */
-  get statusUrl(): string {
-    if (!this.currentSigner) {
-      return '#';
+  public set activeSubpage(index) {
+    const numSubpages = Object.keys(this.subpageIndexes).length;
+    if (index < 0 || index >= numSubpages) {
+      index = 0;
     }
 
-    const query = `?dhealth.address=${this.currentSigner.plain()}`;
-    return `${this.backendUrl}/status${query}`;
+    this.selectedSubpage = index;
   }
   /// end-region computed properties
 
@@ -106,10 +158,12 @@ export default class HealthToEarn extends Vue {
   async created() {
     const service = new WalletService();
 
+    // Uses IPC to get repository factory from app store (Vuex)
+    this.repositoryFactory = await service.getRepositoryFactory();
+
     // Uses IPC to get current signer address from app store (Vuex)
     this.currentSigner = await service.getCurrentSigner();
-
-    //XXX should poll for status
+    this.isLoadingWallet = false;
   }
   /// end-region component methods
 }
@@ -117,5 +171,4 @@ export default class HealthToEarn extends Vue {
 
 <style lang="less" scoped>
 @import "./HealthToEarn.less";
-@import "./ForkMe.less";
 </style>

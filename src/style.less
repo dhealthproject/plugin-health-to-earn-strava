@@ -1,0 +1,328 @@
+/**
+ * This file is part of dHealth Wallet Plugins shared under LGPL-3.0
+ * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
+ *
+ * @package     dHealth Wallet Plugins
+ * @subpackage  Health to Earn with Strava
+ * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
+ * @license     LGPL-3.0
+ */
+/**
+ * Theme colors
+ **/
+@primary: #44004e;
+@secondary: #89008f;
+@accentFirst: #ff00ff;
+@accentFirstLight: rgba(255, 0, 255, 0.1);
+@accentFirstHover: rgba(255, 0, 255, 0.6);
+@accentSecond: #00c8ff;
+@accentThird: #33dd50;
+@accentThirdLight: rgba(51, 221, 80, 0.1);
+@accentFourth: #ff9600;
+@black: #000000;
+@blackLight: #5b5b5b;
+@blackTransparent: #0000004d;
+@white: #ffffff;
+@whiteDark: #fdf8f5;
+@whiteLight: #fffffffa;
+
+/**
+ * Elements outline
+ **/
+@noDataColor: rgba(180, 180, 180, 0.6);
+@backgroundColor: #f3f4f8;
+@boxShadow: #d8c5f3;
+@borderColor: #b4b4b4;
+@lineColor: rgba(68, 0, 78, 0.1);
+@selectedValueColor: #515a6e;
+@borderRadius: 8px;
+@buttonBorderRadius: 0.04rem;
+
+/**
+ * Fonts
+ **/
+// @symbolFont: "Noto Sans";
+@themeFont: "noto-sans-regular";
+@themeFontBold: "noto-sans-bold";
+@themeFontExtraBold: "noto-sans-extrabold";
+@themeFontLight: "noto-sans-light";
+@themeFontMedium: "noto-sans-medium";
+@themeFontSemiBold: "noto-sans-semibold";
+@minimumFont: .10rem;
+@smallerFont: .12rem;
+@smallFont: .14rem;
+@normalFont: .16rem;
+@normalFontLineHeight: .25rem;
+@fontSize24: .24rem;
+@bigFont: .18rem;
+@biggerFont: .20rem;
+@subtitleFont: .30rem;
+@biggestFont: .45rem;
+@bold: 600;
+@bolder: 800;
+@boldest: 900;
+
+/**
+ * Forms
+ **/
+@formFieldHeight: 0.5rem;
+
+/**
+ * Helpers
+ **/
+.flex-value { display: flex; }
+.mb0 { margin-bottom: 0; }
+.mb40 { margin-bottom: .4rem; }
+.mt0 { margin-top: 0; }
+.mt40 { margin-top: .4rem; }
+
+.colored-pri { color: @primary; }
+.colored-sec { color: @secondary; }
+
+/**
+ * Elements 
+ **/
+.row {
+  display: flex;
+}
+
+.inputs-container { 
+  > div { width: 100%; }
+}
+
+.inputs-container.with-button {
+  display: flex;
+
+  > div { display: flex; }
+
+  .ivu-tooltip {
+    width: unset;
+    background: transparent;
+  }
+}
+
+.input-size {
+  width: 100%;
+  height: 100%;
+}
+
+.input-style {
+  height: @formFieldHeight;
+  border: none;
+  outline: none;
+  padding-left: 0.2rem;
+  padding-right: 0.15rem;
+  font-size: @biggerFont;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 0.04rem;
+  &:-webkit-autofill::first-line {
+    font-size: @biggerFont;
+    font-family: @themeFontLight;
+  }
+}
+
+.status-icon-container {
+  height: 32px;
+  width: 32px;
+}
+
+.logo-wrapper {
+  display: inline-block;
+  height: 32px;
+  width: 32px;
+  margin-right: 10px;
+  opacity: 0.4;
+  margin-top: 5px;
+}
+
+.network-name { margin-top: 10px; }
+.form-label { padding-left: .3rem; }
+
+/**
+ * Containers
+ **/
+
+.screen-topbar-container {
+  background-color: transparent;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+
+  .screen-topbar-inner-container {
+    width: 100%;
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+    display: flex;
+    justify-content: center;
+
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    border-radius: @borderRadius;
+    background-color: white;
+
+    > div {
+        padding: 18px 0 18px 30px;
+        position: relative;
+        max-width: 250px;
+
+      .status-label {
+        > span {
+          font-size: @biggerFont;
+          line-height: 33px;
+          color: @primary;
+        }
+      }
+
+      .status-value {
+        font-size: @biggerFont;
+        font-weight: 400;
+        display: inline-block;
+        color: @secondary;
+        line-height: 40px;
+      }
+
+      .status-value.flex-value {
+        display: flex;
+      }
+    }
+  }
+}
+
+.screen-main-container {
+  .w50 {
+    width: 50%;
+  }
+}
+
+/*!
+ * "Fork me on GitHub" CSS ribbon v0.2.3 | MIT License
+ * https://github.com/simonwhitaker/github-fork-ribbon-css
+*/
+
+.github-fork-ribbon {
+  width: 12.1em;
+  height: 12.1em;
+  position: absolute;
+  overflow: hidden;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+  font-size: 13px;
+  text-decoration: none;
+  text-indent: -999999px;
+}
+
+.github-fork-ribbon.fixed {
+  position: fixed;
+}
+
+.github-fork-ribbon:hover, .github-fork-ribbon:active {
+  background-color: rgba(0, 0, 0, 0.0);
+}
+
+.github-fork-ribbon:before, .github-fork-ribbon:after {
+  /* The right and left classes determine the side we attach our banner to */
+  position: absolute;
+  display: block;
+  width: 15.38em;
+  height: 1.54em;
+
+  top: 3.23em;
+  right: -3.23em;
+
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+
+.github-fork-ribbon:before {
+  content: "";
+
+  /* Add a bit of padding to give some substance outside the "stitching" */
+  padding: .38em 0;
+
+  /* Set the base colour */
+  background-color: #a00;
+
+  /* Set a gradient: transparent black at the top to almost-transparent black at the bottom */
+  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(0, 0, 0, 0)), to(rgba(0, 0, 0, 0.15)));
+  background-image: -webkit-linear-gradient(top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
+  background-image: -moz-linear-gradient(top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
+  background-image: -ms-linear-gradient(top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
+  background-image: -o-linear-gradient(top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
+  background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.15));
+
+  /* Add a drop shadow */
+  -webkit-box-shadow: 0 .15em .23em 0 rgba(0, 0, 0, 0.5);
+  -moz-box-shadow: 0 .15em .23em 0 rgba(0, 0, 0, 0.5);
+  box-shadow: 0 .15em .23em 0 rgba(0, 0, 0, 0.5);
+
+  pointer-events: auto;
+}
+
+.github-fork-ribbon:after {
+  /* Set the text from the data-ribbon attribute */
+  content: attr(data-ribbon);
+
+  /* Set the text properties */
+  color: #fff;
+  font: 700 1em "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.54em;
+  text-decoration: none;
+  text-shadow: 0 -.08em rgba(0, 0, 0, 0.5);
+  text-align: center;
+  text-indent: 0;
+
+  /* Set the layout properties */
+  padding: .15em 0;
+  margin: .15em 0;
+
+  /* Add "stitching" effect */
+  border-width: .08em 0;
+  border-style: dotted;
+  border-color: #fff;
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.github-fork-ribbon.left-top, .github-fork-ribbon.left-bottom {
+  right: auto;
+  left: 0;
+}
+
+.github-fork-ribbon.left-bottom, .github-fork-ribbon.right-bottom {
+  top: auto;
+  bottom: 0;
+}
+
+.github-fork-ribbon.left-top:before, .github-fork-ribbon.left-top:after, .github-fork-ribbon.left-bottom:before, .github-fork-ribbon.left-bottom:after {
+  right: auto;
+  left: -3.23em;
+}
+
+.github-fork-ribbon.left-bottom:before, .github-fork-ribbon.left-bottom:after, .github-fork-ribbon.right-bottom:before, .github-fork-ribbon.right-bottom:after {
+  top: auto;
+  bottom: 3.23em;
+}
+
+.github-fork-ribbon.left-top:before, .github-fork-ribbon.left-top:after, .github-fork-ribbon.right-bottom:before, .github-fork-ribbon.right-bottom:after {
+  -webkit-transform: rotate(-45deg);
+  -moz-transform: rotate(-45deg);
+  -ms-transform: rotate(-45deg);
+  -o-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+}
+
+.github-fork-ribbon.right-bottom:before {
+  background-color: #090;
+}

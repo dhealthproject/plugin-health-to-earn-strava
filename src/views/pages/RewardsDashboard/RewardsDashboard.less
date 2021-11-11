@@ -1,0 +1,87 @@
+/**
+ * This file is part of dHealth Wallet Plugins shared under LGPL-3.0
+ * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
+ *
+ * @package     dHealth Wallet Plugins
+ * @subpackage  Health to Earn with Strava
+ * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
+ * @license     LGPL-3.0
+ */
+@import "../../../style.less";
+
+.link-information-table-container {
+  display: grid;
+  grid-template-rows: auto;
+
+  .screen-topbar-container .justified-rows {
+    display: grid;
+    grid-auto-flow: row;
+    text-align: justify;
+    width: 100%;
+  }
+
+  .screen-main-container {
+    display: flex;
+
+    .table-wrapper {
+      padding: 0 5px;
+      margin: auto;
+    }
+
+    .table-wrapper.p-custom {
+      .table-cell {
+        padding: .2rem 0 0 .1rem;
+      }
+    }
+
+    .table-section.table-container {
+      grid-template-rows: .4rem auto .5rem;
+    }
+  }
+
+  .autorize-wrapper {
+    width: 100%;
+    text-align: center;
+  }
+
+  a.authorize-button:visited,
+  a.authorize-button:link {
+    line-height: 1rem;
+    border: 1px solid #000;
+    border-radius: 10px;
+    padding: 0.3rem;
+    background: #f38f4c;
+    color: @white;
+  }
+
+  a.authorize-button:hover,
+  a.authorize-button:active,
+  a.authorize-button:focus {
+    background: #da5a05;
+    cursor: pointer;
+  }
+
+  .empty-list {
+    text-align: center;
+    font-size: 1.2em;
+  }
+
+  .dapp-console {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: @biggerFont;
+    text-align: center;
+    border: 1px dashed #f38f4c;
+    margin: .2rem auto;
+    padding: .2rem;
+  }
+
+  .separator {
+    background: #f38f4c;
+    color: #f38f4c;
+    border-top: 1px solid #f38f4caa;
+    opacity: 0.3;
+    width: 70%;
+    margin: .4rem auto;
+  }
+}
+

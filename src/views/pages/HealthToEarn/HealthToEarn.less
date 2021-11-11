@@ -7,7 +7,7 @@
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
-@import "../../../theme.less";
+@import "../../../style.less";
 
 .dhealth-plugin-health-to-earn-container {
   position: relative;
@@ -34,35 +34,29 @@
 
   .dashboard-left-container {
     display: grid;
-    grid-template-rows: auto 0.2rem auto;
+    grid-template-rows: 7.7rem .5rem;
 
-    .node-details-container {
+    .health-to-earn-container {
       background: @white;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: top;
+      display: grid;
+      grid-template-rows: 1rem auto;
       height: 100%;
       text-align: center;
 
       .symbol-tab-container.horizontal {
-        margin: auto;
+        margin: .2rem auto;
       }
     }
 
-    hr.separator {
-      border-color: #5200c6;
-      border-top: 1px;
-      opacity: 0.2;
-      margin: 10px;
-    }
-
-    .break {
-      flex-basis: 100%;
-      height: 0;
-    }
-
-    .w50 {
-      width: 50%;
+    .health-to-earn-footer {
+      .text-miniature {
+        font-size: 0.78em;
+        line-height: 1.3;
+        font-weight: 300;
+        text-align: justify;
+        width: 95%;
+        margin: auto;
+      }
     }
 
     .subpage-field {
@@ -107,6 +101,15 @@
       font-family: @themeFont;
       text-align: justify;
       margin-bottom: .2rem;
+    }
+
+    .separator {
+      margin-bottom: .4rem;
+      margin-top: .4rem;
+      background: #89008f;
+      color: #89008f;
+      border-top: 1px solid #89008faa;
+      opacity: 0.3;
     }
   }
 }

@@ -72,7 +72,7 @@ a:focus {
 */
 .site-header {
   margin: 0 auto;
-  padding: 50px 0 30px;
+  padding: 10px 0 10px;
   max-width: 450px;
   display: flex;
 }
@@ -83,7 +83,7 @@ a:focus {
 .site-header__title {
   margin: 0 auto;
   font-family: Montserrat, sans-serif;
-  font-size: 1.6rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 60px;
 }
@@ -112,11 +112,11 @@ a:focus {
   margin: 0;
 }
 .main-content__htelogo img {
-  height: 200px;
+  height: 150px;
 }
 .main-content__body {
   margin: 20px 0 0;
-  font-size: 1.2rem;
+  font-size: 1rem;
   line-height: 1.4;
   text-align: center;
 }
@@ -161,13 +161,16 @@ ul.main-content__steps > li {
   position: absolute;
   bottom: 0;
 }
+.site-footer__resources {
+  text-align: left;
+}
 .site-footer__fineprint {
-  font-size: 0.9375rem;
+  font-size: 0.7375rem;
   line-height: 1.3;
   font-weight: 300;
 }
 .site-footer__disclaimer {
-  font-size: 0.9375rem;
+  font-size: 0.7375rem;
   line-height: 1.3;
   font-weight: 300;
   text-align: justify;
@@ -192,8 +195,10 @@ ul.main-content__steps > li {
 @media only screen and (min-width: 40em) {
   .site-header {
     padding-top: 100px;
+    /* padding-bottom: 30px; */
   }
   .site-header__title {
+    font-size: 1.6rem;
     width: 60%;
     text-align: center;
   }
@@ -225,6 +230,7 @@ ul.main-content__steps > li {
   }
   .site-footer__resources {
     font-size: 1.125rem;
+    text-align: center;
   }
   .site-footer__fineprint {
     font-size: 0.9375rem;

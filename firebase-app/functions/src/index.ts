@@ -87,7 +87,7 @@ const NDAPP = Account.createFromPrivateKey(
   users.where('address', '==', data['dhealth.address'])
     .get()
     .then((user: any) => {
-      if (user.exists) {
+      if (!user.empty) {
         // 200 - OK
         return response.sendStatus(200);
       }

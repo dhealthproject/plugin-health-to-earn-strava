@@ -21,6 +21,12 @@
           This dapp last rewarded a user on the <span class="colored-sec">{{ lastRewardDate }}</span> 
           with <span class="colored-sec">{{ lastRewardAmount }} DHP</span>.
         </p>
+        <p v-if="!isLoadingStatus && !isAccountLinked && hasRewards"
+          class="alert-warning">
+          This account was previously linked to a Strava account but has been unlinked and is not
+          actively linked to a Strava account anymore. Consequently, this account will not receive
+          any more rewards. You can re-authorize the account if you wish to continue using this one.
+        <p>
       </div>
       <div
         v-if="!isLoadingStatus && isAccountLinked"
@@ -46,6 +52,12 @@
             <span v-else>{{ totalRewards }} DHP</span>
           </div>
         </div>
+        <div class="value-container">
+          <div class="status-label"><span>Reload</span></div>
+          <div class="status-value">
+            <ButtonRefresh @click="onClickRefresh" />
+          </div>
+        </div>
       </div>
       <div
         v-else
@@ -67,12 +79,12 @@
       <p v-else-if="!isAccountLinked" class="autorize-wrapper">
         <a :href="authorizeUrl" target="_blank" class="authorize-button">Authorize now</a>
       </p>
-      <div v-else="isAccountLinked" class="table-wrapper p-custom">
+      <div v-if="isAccountLinked || hasRewards" class="table-wrapper p-custom">
         <GenericTableDisplay
           class="table-section"
           :items="rewardsForAccount"
           :fields="rewardFields"
-          :page-size="8"
+          :page-size="5"
           :disable-headers="!rewardsForAccount || !rewardsForAccount.length"
           :disable-single-page-links="true"
           :disable-rows-grid="true"
@@ -93,12 +105,21 @@
               v-for="(rowValues, index) in props.items"
               :key="index"
               :row-values="rowValues"
-              @click="onClickReward(rowValues.date)"
+              @click="onClickReward(rowValues.hash)"
             />
           </template>
         </GenericTableDisplay>
       </div>
     </div>
+
+    <ModalRewardViewer
+      v-if="showRewardViewerModal"
+      :visible="showRewardViewerModal"
+      :title="'Congratulation for this reward!'"
+      :reward="lastClickedReward"
+      :factory="factory"
+      @close="showRewardViewerModal = false"
+    />
   </div>
 </template>
 
@@ -107,17 +128,22 @@ const BigNumber = require('bignumber.js');
 const axios = require('axios').default;
 const moment = require('moment');
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { GenericTableDisplay, GenericTableRow, IconLoading } from '@dhealth/wallet-components';
+import { ButtonRefresh, GenericTableDisplay, GenericTableRow, IconLoading } from '@dhealth/wallet-components';
 import { Address, RepositoryFactoryHttp } from '@dhealth/sdk';
 
 // internal dependencies
 import { RewardDTO, StravaAppService } from '../../../services/StravaAppService';
 
+// internal child components
+import ModalRewardViewer from '../../modals/ModalRewardViewer/ModalRewardViewer.vue';
+
 @Component({
   components: {
+    ButtonRefresh,
     GenericTableDisplay,
     GenericTableRow,
     IconLoading,
+    ModalRewardViewer,
   },
 })
 export default class RewardsDashboard extends Vue {
@@ -172,6 +198,12 @@ export default class RewardsDashboard extends Vue {
   protected isAccountLinked: boolean = false;
 
   /**
+   * Whether currently displaying the VIEWER modal box
+   * @var {boolean}
+   */
+  public showRewardViewerModal: boolean = false;
+
+  /**
    * The last reward paid out.
    * @var {{amount: number, date: string}}
    */
@@ -189,6 +221,12 @@ export default class RewardsDashboard extends Vue {
    */
   protected lastUpdatedRewards: number = new Date().valueOf();
 
+  /**
+   * The last clicked reward.
+   * @var {RewardDTO}
+   */
+  protected lastClickedReward: RewardDTO;
+
   /// region computed properties
   /**
    * Getter for fields in the rewards table.
@@ -196,8 +234,8 @@ export default class RewardsDashboard extends Vue {
    */
   public get rewardFields(): any[] {
     return [
-      { name: 'date', label: 'Date of activity' },
-      { name: 'height', label: 'Block number' },
+      { name: 'date', label: 'Date' },
+      { name: 'height', label: 'Block' },
       { name: 'amount', label: 'Total earned' },
       { name: 'hash', label: 'Transaction hash' }
     ];
@@ -273,7 +311,7 @@ export default class RewardsDashboard extends Vue {
         curr.amount
       )),
       new BigNumber('0')
-    ).shiftedBy(-6); // 6 = divisibility
+    );
   }
 
   /**
@@ -301,6 +339,15 @@ export default class RewardsDashboard extends Vue {
 
     return moment(this.lastReward.date).format('Do MMMM YYYY');
   }
+
+  /**
+   * Getter for hasRewards property to determine whether
+   * an account has received rewards from the dapp.
+   * @returns {boolean}
+   */
+  public get hasRewards(): boolean {
+    return !!this.rewardsForAccount && this.rewardsForAccount.length > 0;
+  }
   /// end-region computed properties
 
   /// region components methods
@@ -310,16 +357,35 @@ export default class RewardsDashboard extends Vue {
    */
   async created() {
     this.stravaApp = new StravaAppService(this.factory)
-
-    // uses health-to-earn firebase backend to find out status
-    this.isAccountLinked = await this.stravaApp.getAccountStatus(this.account);
-    this.isLoadingStatus = false;
-
-    // uses network transactions to find last reward paid out
-    this.lastReward = await this.stravaApp.getLastReward();
-    this.isLoadingLastReward = false;
-
     await this.refreshData();
+  }
+
+  /**
+   * Hook called on click of a reward in the table.
+   *
+   * @async
+   * @returns {void}
+   */
+  public onClickReward(hash) {
+    const reward: RewardDTO = this.rewardsForAccount.find(
+      r => r.hash === hash
+    );
+
+    if (!! reward) {
+      this.lastClickedReward = reward;
+      this.showRewardViewerModal = true;
+    }
+  }
+
+  /**
+   * Hook called on click of the refresh button.
+   *
+   * @async
+   * @returns {void}
+   */
+  protected async onClickRefresh() {
+    await this.refreshData();
+    this.$forceUpdate();
   }
   /// end-region components methods
 
@@ -336,14 +402,18 @@ export default class RewardsDashboard extends Vue {
     this.isLoadingLastReward = true;
 
     try {
-      // executes /status cloud function
+      // uses health-to-earn firebase backend to find out status
       if (! this.isAccountLinked) {
         this.isAccountLinked = await this.stravaApp.getAccountStatus(this.account);
         this.isLoadingStatus = false;
       }
 
-      // reads transaction of account
-      this.rewardsForAccount = await this.stravaApp.getAccountRewards(this.account);
+      // reads transaction of account and formats amounts
+      this.rewardsForAccount = (await this.stravaApp.getAccountRewards(this.account)).map(
+        r => ({ ...r, amount: new BigNumber(
+          r.amount,
+        ).shiftedBy(-6), // 6 = divisibility
+      }));
       this.isLoadingRewards = false;
       this.lastUpdatedRewards = new Date().valueOf();
 

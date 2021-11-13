@@ -73,6 +73,15 @@ export class StravaAppService {
   ) {}
 
   /**
+   * Getter for the dapp account address.
+   *
+   * @returns {Address}
+   */
+  public getAddress(): Address {
+    return this.dapp.address;
+  }
+
+  /**
    * Getter for the `authorizeUrl` property. This value should
    * contain the URL to an authorization callback  redirecting
    * to the Strava /oauth/authorize route.
@@ -137,10 +146,10 @@ export class StravaAppService {
 
       // maps to table fields
       return resolve(transactions.data.map((t: TransferTransaction) => ({
-        amount: t.mosaics[0].amount.compact(),
         date: t.message.payload,
-        hash: t.transactionInfo.hash,
         height: t.transactionInfo.height.compact(),
+        amount: t.mosaics[0].amount.compact(),
+        hash: t.transactionInfo.hash,
       })));
     });
   }
@@ -174,11 +183,36 @@ export class StravaAppService {
       // maps to table fields
       const transaction = transactions.data[0] as TransferTransaction;
       return resolve({
-        amount: transaction.mosaics[0].amount.compact(),
         date: transaction.message.payload,
-        hash: transaction.transactionInfo.hash,
         height: transaction.transactionInfo.height.compact(),
+        amount: transaction.mosaics[0].amount.compact(),
+        hash: transaction.transactionInfo.hash,
       });
+    });
+  }
+
+  /**
+   * Connects to a node using the factory to request
+   * transaction details of the reward that was sent
+   * by the Health to Earn with Strava dapp account.
+   *
+   * @param   {RewardDTO}   reward
+   * @returns {Promise<TransferTransaction>} The transaction details.
+   */
+  public async getRewardTransaction(
+    reward: RewardDTO,
+  ): Promise<TransferTransaction> {
+    return new Promise(async (resolve) => {
+      // uses factory to create transaction endpoints client
+      const repository = this.factory.createTransactionRepository();
+
+      // requests /transactions/confirmed
+      const transaction = await repository.getTransaction(
+        reward.hash,
+        TransactionGroup.Confirmed,
+      ).toPromise() ;
+
+      return resolve(transaction as TransferTransaction);
     });
   }
 

@@ -36,6 +36,12 @@
 
     .table-section.table-container {
       grid-template-rows: .4rem auto .5rem;
+      overflow: hidden;
+
+      .table-header-container.table-columns {
+        grid-template-columns: 1rem .7rem 2rem auto;
+        text-align: left;
+      }
     }
   }
 
@@ -73,6 +79,13 @@
     border: 1px dashed #f38f4c;
     margin: .2rem auto;
     padding: .2rem;
+  }
+
+  .alert-warning {
+    margin: .2rem auto;
+    padding: .2rem;
+    text-align: center;
+    color: #f38f4caa;
   }
 
   .separator {

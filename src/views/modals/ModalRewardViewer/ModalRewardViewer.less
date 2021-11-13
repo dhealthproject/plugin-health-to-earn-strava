@@ -1,0 +1,141 @@
+/**
+ * This file is part of YourDLT Wallet Plugins shared under LGPL-3.0
+ * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
+ *
+ * @package     YourDLT Wallet Plugins
+ * @subpackage  @yourdlt/plugin-ninjazzz
+ * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
+ * @license     LGPL-3.0
+ */
+@import "../../../style.less";
+
+.modal-reward-viewer-wrapper {
+  /deep/.ivu-modal {
+    width: 9rem !important;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /deep/.ivu-modal-body {
+    margin-left: 0.6rem;
+    margin-right: 0.6rem;
+    padding-bottom: 0.4rem;
+    padding-top: 0;
+  }
+
+  /deep/.header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+  }
+
+  /deep/.title {
+    color: @primary;
+    font-size: @subtitleFont;
+    font-family: @themeFontBold;
+    max-width: 70%;
+  }
+
+  /deep/.warning-icon {
+    height: 0.6rem;
+  }
+
+  /deep/.body-text {
+    display: grid;
+    grid-template-rows: auto;
+
+    color: @primary;
+    font-size: @biggerFont;
+    font-family: @themeFontSemiBold;
+    line-height: 30px;
+    white-space: pre-wrap;
+    text-align: justify;
+
+    label {
+      color: @accentFirst;
+    }
+  }
+
+  .inputs-container { 
+    > div { width: 100%; }
+  }
+
+  .inputs-container.with-button {
+    display: flex;
+
+    > div { display: flex; }
+
+    .ivu-tooltip {
+      width: unset;
+      background: transparent;
+    }
+  }
+
+  .input-size {
+    width: 100%;
+    height: 100%;
+  }
+
+  .input-style {
+    height: @formFieldHeight;
+    border: none;
+    outline: none;
+    padding-left: 0.2rem;
+    padding-right: 0.15rem;
+    font-size: @biggerFont;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-radius: 0.04rem;
+    &:-webkit-autofill::first-line {
+      font-size: @biggerFont;
+      font-family: @themeFontLight;
+    }
+  }
+
+  .mb0 { margin-bottom: 0; }
+  .mt0 { margin-top: 0; }
+
+  .table-wrapper {
+    padding: 0 5px;
+  }
+
+  .table-wrapper.p-custom {
+    .table-cell {
+      padding: .2rem 0 0 .1rem;
+    }
+  }
+
+  .table-section.table-container {
+    grid-template-rows: .4rem auto .5rem;
+  }
+
+  .empty-list {
+    text-align: center;
+    font-size: 1.2em;
+  }
+
+  /deep/.form-row-inner-container {
+    .form-label-container {
+      .form-label {
+        padding-left: 0;
+      }
+    }
+  }
+
+  .form-row-inner-container .inputs-container a {
+    padding-left: .2rem;
+  }
+
+  .dapp-console {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: @biggerFont;
+    text-align: center;
+    border: 1px dashed #f38f4c;
+    margin: .2rem auto;
+    padding: .2rem;
+  }
+}

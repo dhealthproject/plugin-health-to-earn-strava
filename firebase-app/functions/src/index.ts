@@ -63,7 +63,7 @@ const NDAPP = Account.createFromPrivateKey(
  * @params    {Response}  response
  * @returns   {void}
  */
- export const status = functions.https.onRequest((request: any, response: any) => {
+export const status = functions.https.onRequest((request: any, response: any) => {
   // proxies over to correct request handler
   if (request.method !== 'GET') {
     return response.sendStatus(403);
@@ -201,9 +201,9 @@ export const link = functions.https.onRequest((request: any, response: any) => {
     DATABASE.collection('users').doc('' + athlete.id).set({
       address,
       athleteId: athlete.id,
-      accessToken: res.data.access_token,
-      refreshToken: res.data.refresh_token,
-      accessExpiresAt: res.data.expires_at,
+      // accessToken: res.data.access_token,
+      // refreshToken: res.data.refresh_token,
+      // accessExpiresAt: res.data.expires_at,
       linkedAt: new Date().valueOf(),
     }, { merge: true })
     .then((user: any) => {
@@ -327,7 +327,6 @@ export const payout = functions.pubsub.schedule('every 1 minutes').onRun(async (
   ));
   return null;
 });
-
 /// end-region cloud scheduler functions
 
 /// region private API
@@ -516,7 +515,7 @@ const broadcastRewardPayout = (reward: any) => {
   // picks a *random* node of the list
   const N = NETWORK.nodes.length;
   const i = Math.floor(Math.random() * (N - 1 + 1)) + 1;
-  const nodeUrl = NETWORK.nodes[i];
+  const nodeUrl = !!NETWORK.nodes[i] ? NETWORK.nodes[i] : NETWORK.nodes[0];
 
   // traces scheduler configuration
   functions.logger.log(`[DEBUG] Signed transaction for ${reward.id} with hash: ${signedTransaction.hash}`);

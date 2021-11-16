@@ -36,7 +36,7 @@ export class WalletService {
   public async getRepositoryFactory(): Promise<RepositoryFactoryHttp> {
     // Uses IPC to get repository factory from app store (Vuex)
     const networkBus = await PluginBridge.StoreActionRequest(
-      '@dhealth/plugin-health-to-earn-strava',
+      '@dhealthdapps/health-to-earn',
       PluginBridge.PluginPermissionType.Getter,
       'network/repositoryFactory',
     );
@@ -63,7 +63,7 @@ export class WalletService {
   public async getCurrentSigner(): Promise<Address> {
     // Uses IPC to get repository factory from app store (Vuex)
     const networkBus = await PluginBridge.StoreActionRequest(
-      '@dhealth/plugin-health-to-earn-strava',
+      '@dhealthdapps/health-to-earn',
       PluginBridge.PluginPermissionType.Getter,
       'account/currentSignerAddress',
     );

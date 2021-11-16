@@ -12,12 +12,10 @@ import Vue, { VueConstructor } from "vue";
 // internal dependencies
 // child components
 import HealthToEarn from "./views/pages/HealthToEarn/HealthToEarn.vue";
-import RewardsDashboard from "./views/pages/RewardsDashboard/RewardsDashboard.vue";
 
 /// region components library
 const components: { [s: string]: VueConstructor } = {
   HealthToEarn,
-  RewardsDashboard,
 };
 
 export const registerComponents = (): { [s: string]: VueConstructor } => {
@@ -39,9 +37,8 @@ export default {
         title: "Health to Earn with Strava",
         hideFromMenu: true,
       },
-      // @ts-ignore
-      component: () => import("@/views/pages/HealthToEarn/HealthToEarn.vue"),
       props: false,
+      // no-component
     },
   ],
 

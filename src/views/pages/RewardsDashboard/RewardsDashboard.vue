@@ -12,6 +12,7 @@
 <template>
   <div class="link-information-table-container">
     <div class="screen-topbar-container">
+      <!-- always displayed -->
       <div class="justified-rows">
         <p>
           Use your dHealth Wallet to earn rewards when you complete activities on Strava&trade;.
@@ -21,13 +22,9 @@
           This dapp last rewarded a user on the <span class="colored-sec">{{ lastRewardDate }}</span> 
           with <span class="colored-sec">{{ lastRewardAmount }} DHP</span>.
         </p>
-        <p v-if="!isLoadingStatus && !isAccountLinked && hasRewards"
-          class="alert-warning">
-          This account was previously linked to a Strava account but has been unlinked and is not
-          actively linked to a Strava account anymore. Consequently, this account will not receive
-          any more rewards. You can re-authorize the account if you wish to continue using this one.
-        <p>
       </div>
+
+      <!-- in case account is linked -->
       <div
         v-if="!isLoadingStatus && isAccountLinked"
         class="screen-topbar-inner-container">
@@ -59,11 +56,19 @@
           </div>
         </div>
       </div>
+
+      <!-- in case account is unlinked -->
       <div
         v-else
         class="screen-topbar-inner-container justified-rows">
         <hr class="separator" />
-        <p class="mb40">
+        <p v-if="!isLoadingStatus && !isAccountLinked && hasRewards"
+          class="alert-warning">
+          This account was previously linked to a Strava account but has been unlinked and is not
+          actively linked to a Strava account anymore. Consequently, this account will not receive
+          any more rewards. You can re-authorize the account if you wish to continue using this one.
+        <p>
+        <p v-else class="mb40">
           Authorize our Strava&trade; App <b>dHealth to Earn</b> with your Strava&trade; account by clicking the button below.
           Your preferred browser will open a Strava&trade; address. You will then be asked to Log-In to your Strava account 
           and <i>authorize</i> our App. After having done so, come back here and start earning DHP with your completed Strava&trade; activities.
@@ -79,7 +84,7 @@
       <p v-else-if="!isAccountLinked" class="autorize-wrapper">
         <a :href="authorizeUrl" target="_blank" class="authorize-button">Authorize now</a>
       </p>
-      <div v-if="isAccountLinked || hasRewards" class="table-wrapper p-custom">
+      <div v-if="isAccountLinked" class="table-wrapper p-custom">
         <GenericTableDisplay
           class="table-section"
           :items="rewardsForAccount"

@@ -17,7 +17,7 @@
         <p>
           Use your dHealth Wallet to earn rewards when you complete activities on Strava&trade;.
           You will be rewarded once per day for any activity completed with a linked Strava account.
-        <p>
+        </p>
         <p class="dapp-console">
           This dapp last rewarded a user on the <span class="colored-sec">{{ lastRewardDate }}</span> 
           with <span class="colored-sec">{{ lastRewardAmount }} DHP</span>.
@@ -59,16 +59,16 @@
 
       <!-- in case account is unlinked -->
       <div
-        v-else
+        v-else-if="!isLoadingStatus"
         class="screen-topbar-inner-container justified-rows">
         <hr class="separator" />
-        <p v-if="!isLoadingStatus && !isAccountLinked && hasRewards"
-          class="alert-warning">
+        <p v-if="!isAccountLinked && hasRewards"
+          class="alert-warning mb40">
           This account was previously linked to a Strava account but has been unlinked and is not
           actively linked to a Strava account anymore. Consequently, this account will not receive
           any more rewards. You can re-authorize the account if you wish to continue using this one.
-        <p>
-        <p v-else class="mb40">
+        </p>
+        <p v-else-if="!isAccountLinked" class="mb40">
           Authorize our Strava&trade; App <b>dHealth to Earn</b> with your Strava&trade; account by clicking the button below.
           Your preferred browser will open a Strava&trade; address. You will then be asked to Log-In to your Strava account 
           and <i>authorize</i> our App. After having done so, come back here and start earning DHP with your completed Strava&trade; activities.
@@ -83,6 +83,9 @@
       </div>
       <p v-else-if="!isAccountLinked" class="autorize-wrapper">
         <a :href="authorizeUrl" target="_blank" class="authorize-button">Authorize now</a>
+        <div class="ml15">
+          <ButtonRefresh @click="onClickRefresh" />
+        </div>
       </p>
       <div v-if="isAccountLinked" class="table-wrapper p-custom">
         <GenericTableDisplay
@@ -232,6 +235,12 @@ export default class RewardsDashboard extends Vue {
    */
   protected lastClickedReward: RewardDTO;
 
+  /**
+   * The status poll timeout instance.
+   * @var {any}
+   */
+  protected statusPoll: any;
+
   /// region computed properties
   /**
    * Getter for fields in the rewards table.
@@ -363,6 +372,27 @@ export default class RewardsDashboard extends Vue {
   async created() {
     this.stravaApp = new StravaAppService(this.factory)
     await this.refreshData();
+
+    if (! this.isAccountLinked) {
+      // check status again after 15 seconds
+      this.statusPoll = setTimeout(this.refreshData.bind(this), 15000);
+
+      // clear status poll after 10 times
+      setInterval(() => {
+        clearTimeout(this.statusPoll);
+      }, 150000);
+    }
+  }
+
+  /**
+   * Hook called on destruction of the Component.
+   *
+   * @returns {void}
+   */
+  beforeDestroy() {
+    if (!!this.statusPoll) {
+      clearTimeout(this.statusPoll);
+    }
   }
 
   /**
@@ -411,6 +441,11 @@ export default class RewardsDashboard extends Vue {
       if (! this.isAccountLinked) {
         this.isAccountLinked = await this.stravaApp.getAccountStatus(this.account);
         this.isLoadingStatus = false;
+      }
+
+      // if linked, stop polling
+      if (this.isAccountLinked && !!this.statusPoll) {
+        clearTimeout(this.statusPoll);
       }
 
       // reads transaction of account and formats amounts

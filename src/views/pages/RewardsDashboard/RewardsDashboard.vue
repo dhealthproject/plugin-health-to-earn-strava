@@ -78,16 +78,25 @@
 
     <div class="screen-main-container">
 
-      <div v-if="isLoadingStatus">
-        <IconLoading v-if="isLoadingStatus" class="empty-list" />
-      </div>
-      <p v-else-if="!isAccountLinked" class="autorize-wrapper">
+      <!-- loading state -->
+      <IconLoading
+        v-if="isLoadingStatus"
+        class="empty-list" />
+
+      <!-- unlinked state -->
+      <div
+        v-else-if="!isAccountLinked"
+        class="autorize-wrapper">
         <a :href="authorizeUrl" target="_blank" class="authorize-button">Authorize now</a>
-        <div class="ml15">
+        <div class="display-inline ml15">
           <ButtonRefresh @click="onClickRefresh" />
         </div>
-      </p>
-      <div v-if="isAccountLinked" class="table-wrapper p-custom">
+      </div>
+
+      <!-- linked state -->
+      <div 
+        v-else-if="isAccountLinked"
+        class="table-wrapper p-custom">
         <GenericTableDisplay
           class="table-section"
           :items="rewardsForAccount"

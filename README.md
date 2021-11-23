@@ -1,4 +1,3 @@
-
 <p align="center"><img src="https://dhealth.network/wp-content/uploads/2021/01/dHealth-Network-Logo-color-change.png" width="400px"></p>
 
 # dHealth Wallet Plugin: Health to Earn with Strava
@@ -8,6 +7,8 @@
 [![License](https://img.shields.io/badge/License-LGPL%203.0%20only-blue.svg)](https://opensource.org/licenses/LGPL-3.0)
 
 Health to Earn with Strava is a showcase to earn `dhealth.dhp` on [dHealth Network][parent-url].
+
+Visit the showcase website for more information [here][showcase-url].
 
 - [Components found here](#components-found-here)
 - [Environment](#environment)
@@ -50,7 +51,6 @@ Following components are defined and exported with this library:
 | Class | Description |
 | --- | --- |
 | `HealthToEarn` | Mixin that displays a page to initiate the OAuth authentication of supported providers. |
-| `RewardsDashboard` | Mixin that displays a dashboard page that contains information about earned DHP. |
 
 ## Environment
 
@@ -147,8 +147,8 @@ curl -X POST https://us-central1-health-to-earn.cloudfunctions.net/webhook \
       "event_time": 1549560669,
       "object_id": 6207413503,
       "object_type": "activity",
-      "owner_id": 94380856,
-      "subscription_id": 204470
+      "owner_id": YOUR_STRAVA_ID,
+      "subscription_id": YOUR_SUBSCRIPTION_ID
     }'
 ```
 
@@ -160,6 +160,7 @@ Licensed under the [LGPL v3.0](LICENSE)
 
 [ref-ltd]: https://using-blockchain.org
 [parent-url]: https://dhealth.network
+[showcase-url]: https://health-to-earn.web.app
 [npm-url]: https://www.npmjs.com/package/@dhealth/plugin-health-to-earn-strava
 [npm-badge]: https://img.shields.io/npm/v/@dhealth/plugin-health-to-earn-strava
 [dl-badge]: https://img.shields.io/npm/dt/@dhealth/plugin-health-to-earn-strava

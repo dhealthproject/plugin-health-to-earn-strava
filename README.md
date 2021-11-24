@@ -154,11 +154,11 @@ curl -X POST https://us-central1-health-to-earn.cloudfunctions.net/webhook \
 
 ## License
 
-Copyright 2021-present [Using Blockchain Ltd][ref-ltd], All rights reserved.
+Copyright 2021-present [Grégory Saive for dHealth Network][ref-ltd], All rights reserved.
 
 Licensed under the [LGPL v3.0](LICENSE)
 
-[ref-ltd]: https://using-blockchain.org
+[ref-ltd]: https://ubc.digital
 [parent-url]: https://dhealth.network
 [showcase-url]: https://health-to-earn.web.app
 [npm-url]: https://www.npmjs.com/package/@dhealth/plugin-health-to-earn-strava

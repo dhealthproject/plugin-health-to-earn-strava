@@ -1,11 +1,11 @@
 
 <p align="center"><img src="https://dhealth.network/wp-content/uploads/2021/01/dHealth-Network-Logo-color-change.png"></p>
 
-# Health to Earn with Strava: Firebase Cloud Functions
+# Health to Earn powered by Strava: Firebase Cloud Functions
 
 [![License](https://img.shields.io/badge/License-LGPL%203.0%20only-blue.svg)](https://opensource.org/licenses/LGPL-3.0)
 
-Health to Earn with Strava is a showcase to earn `dhealth.dhp` on [dHealth Network][parent-url].
+Health to Earn powered by Strava is a showcase to earn `dhealth.dhp` on [dHealth Network][parent-url].
 
 This directory contains the implementation of **Typescript Cloud Functions** using [**Firebase**](https://firebase.google.com/docs/functions).
 

@@ -3,7 +3,7 @@
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  *
  * @package     dHealth Wallet Plugins
- * @subpackage  Health to Earn with Strava
+ * @subpackage  Health to Earn powered by Strava
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
@@ -34,7 +34,7 @@ export default {
       name: "healthToEarn.home",
       meta: {
         protected: true,
-        title: "Health to Earn with Strava",
+        title: "Health to Earn powered by Strava",
         hideFromMenu: true,
       },
       props: false,

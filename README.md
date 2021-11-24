@@ -1,12 +1,12 @@
 <p align="center"><img src="https://dhealth.network/wp-content/uploads/2021/01/dHealth-Network-Logo-color-change.png" width="400px"></p>
 
-# dHealth Wallet Plugin: Health to Earn with Strava
+# dHealth Wallet Plugin: Health to Earn powered by Strava
 
 [![npm-badge][npm-badge]][npm-url]
 [![dl-badge][dl-badge]][npm-url]
 [![License](https://img.shields.io/badge/License-LGPL%203.0%20only-blue.svg)](https://opensource.org/licenses/LGPL-3.0)
 
-Health to Earn with Strava is a showcase to earn `dhealth.dhp` on [dHealth Network][parent-url].
+Health to Earn powered by Strava is a showcase to earn `dhealth.dhp` on [dHealth Network][parent-url].
 
 Visit the showcase website for more information [here][showcase-url].
 

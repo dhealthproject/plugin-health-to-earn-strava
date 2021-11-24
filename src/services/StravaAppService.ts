@@ -3,7 +3,7 @@
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  *
  * @package     dHealth Wallet Plugins
- * @subpackage  Health to Earn with Strava
+ * @subpackage  Health to Earn powered by Strava
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
@@ -38,7 +38,7 @@ export class StravaAppService {
   protected backendUrl: string = 'https://us-central1-health-to-earn.cloudfunctions.net';
 
   /**
-   * The Health to Earn with Strava dapp account.
+   * The Health to Earn powered by Strava dapp account.
    * XXX move to plugin settings
    *
    * @link http://explorer.dhealth.cloud/accounts/NDAPPH6ZGD4D6LBWFLGFZUT2KQ5OLBLU32K3HNY
@@ -98,7 +98,7 @@ export class StravaAppService {
    * Returns whether an account is linked or not.
    *
    * An account link happens when a Strava user
-   * authorizes the Health to Earn with Strava
+   * authorizes the Health to Earn powered by Strava
    * app using their Strava account.
    *
    * @returns {Promise<boolean>}
@@ -194,7 +194,7 @@ export class StravaAppService {
   /**
    * Connects to a node using the factory to request
    * transaction details of the reward that was sent
-   * by the Health to Earn with Strava dapp account.
+   * by the Health to Earn powered by Strava dapp account.
    *
    * @param   {RewardDTO}   reward
    * @returns {Promise<TransferTransaction>} The transaction details.

@@ -4,7 +4,7 @@
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  *
  * @package     dHealth Wallet Plugins
- * @subpackage  Health to Earn with Strava
+ * @subpackage  Health to Earn powered by Strava
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
@@ -40,10 +40,10 @@
         <span class="title_txt">{{ 'Plugin details' }}</span>
       </div>
       <p>
-        This plugin illustrates a Strava&trade; integration with dHealth Network in a Health-to-Earn showcase. 
+        This plugin illustrates a Health-to-Earn showcase on dHealth Network powered by Strava. 
       </p>
       <p>
-        This dapp distributes rewards directly to your dHealth Wallet for activities completed on Strava&trade;. 
+        This dapp distributes rewards directly to your dHealth Wallet for activities completed on Strava. 
       </p>
       <p>
         Authorize our Strava App and start earning DHP for your daily activities.

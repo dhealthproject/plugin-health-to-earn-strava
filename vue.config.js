@@ -3,7 +3,7 @@
  * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
  *
  * @package     dHealth Wallet Plugins
- * @subpackage  Health to Earn with Strava
+ * @subpackage  Health to Earn powered by Strava
  * @author      Grégory Saive for Using Blockchain Ltd <greg@ubc.digital>
  * @license     LGPL-3.0
  */
@@ -12,7 +12,7 @@
 
 module.exports = {
     // Disables extract of CSS files
-    css: {extract: false},
+    css: { extract: false },
     // Disables module splitting
     configureWebpack: {
         optimization: {

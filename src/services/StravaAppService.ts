@@ -87,10 +87,14 @@ export class StravaAppService {
    * to the Strava /oauth/authorize route.
    *
    * @param   {Address}   account
+   * @param   {string}    refCode   (Optional)
    * @returns {string}
    */
-  public getAuthorizeUrl(account: Address): string {
-    const query = `?dhealth.address=${account.plain()}`;
+  public getAuthorizeUrl(account: Address, refCode?: string): string {
+    let query = `?dhealth.address=${account.plain()}`;
+    if (!!refCode && refCode.length) {
+      query += `&ref=${refCode}`;
+    }
     return `${this.backendUrl}/authorize${query}`;
   }
 
@@ -115,6 +119,32 @@ export class StravaAppService {
       }
       catch (err) {
         return resolve(false);
+      }
+    });
+  }
+
+  /**
+   * Returns an account's referral code.
+   *
+   * @returns {Promise<string>}
+   */
+  public async getAccountRefCode(
+    account: Address,
+  ): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await axios
+          .get(this.getReferralUrl(account))
+          .catch((error) => ({ status: 'response' in error ? error.response.status : 400 }));
+
+        if (response.status !== 200) {
+          return reject(`Could not retrieve the referral code.`);
+        }
+
+        return resolve(response.data.referralCode);
+      }
+      catch (err) {
+        return reject(`Could not retrieve the referral code.`);
       }
     });
   }
@@ -229,6 +259,17 @@ export class StravaAppService {
   protected getStatusUrl(account: Address): string {
     const query = `?dhealth.address=${account.plain()}`;
     return `${this.backendUrl}/status${query}`;
+  }
+  /**
+   * Getter for the `referralUrl` property. This value should
+   * contain the URL of an account's referral code retrieval.
+   *
+   * @param   {Address}   account
+   * @returns {string}
+   */
+  protected getReferralUrl(account: Address): string {
+    const query = `?dhealth.address=${account.plain()}`;
+    return `${this.backendUrl}/referral${query}`;
   }
   /// end-region protected API
 }

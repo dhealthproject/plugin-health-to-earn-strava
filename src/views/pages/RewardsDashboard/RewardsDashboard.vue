@@ -29,21 +29,21 @@
         v-if="!isLoadingStatus && isAccountLinked"
         class="screen-topbar-inner-container">
         <div class="value-container">
-          <div class="status-label"><span>Last seen (activity)</span></div>
+          <div class="status-label"><span>Referral code</span></div>
           <div class="status-value">
-            <IconLoading v-if="isLoadingRewards" />
-            <span v-else>{{ lastActivityInterval }} ({{ lastActivityDate }})</span>
+            <IconLoading v-if="isLoadingReferral" />
+            <span v-else><b>{{ myReferralCode }}</b></span>
           </div>
         </div>
         <div class="value-container">
-          <div class="status-label"><span>Number of activities</span></div>
+          <div class="status-label"><span>Activities</span></div>
           <div class="status-value">
             <IconLoading v-if="isLoadingRewards" />
             <span v-else>{{ countActivities }}</span>
           </div>
         </div>
         <div class="value-container">
-          <div class="status-label"><span>Total rewards earned</span></div>
+          <div class="status-label"><span>Rewards earned</span></div>
           <div class="status-value">
             <IconLoading v-if="isLoadingRewards" />
             <span v-else>{{ totalRewards }} DHP</span>
@@ -72,6 +72,7 @@
           Authorize our Strava&trade; App <b>dHealth to Earn</b> with your Strava&trade; account by clicking the button below.
           Your preferred browser will open a Strava&trade; address. You will then be asked to Log-In to your Strava account 
           and <i>authorize</i> our App. After having done so, come back here and start earning DHP with your completed Strava&trade; activities.
+          If you have a referral code, please enter it in the form input above the Authorize button.
         </p>
       </div>
     </div> <!-- /.screen-topbar-container -->
@@ -87,10 +88,18 @@
       <div
         v-else-if="!isAccountLinked"
         class="autorize-wrapper">
-        <a :href="authorizeUrl" target="_blank" class="authorize-button">Authorize now</a>
-        <div class="display-inline ml15">
-          <ButtonRefresh @click="onClickRefresh" />
-        </div>
+          <div class="display-block mb15">
+            <input 
+              v-model="friendReferralCode"
+              class="referral-input"
+              type="text"
+              placeholder="Enter referral code" />
+            <label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+          </div>
+          <a :href="authorizeUrl" target="_blank" class="authorize-button">Authorize now</a>
+          <div class="display-inline ml15">
+            <ButtonRefresh @click="onClickRefresh" />
+          </div>
       </div>
 
       <!-- linked state -->
@@ -196,6 +205,13 @@ export default class RewardsDashboard extends Vue {
 
   /**
    * Whether the component is currently loading
+   * an active account's referral code or not.
+   * @var {boolean}
+   */
+  protected isLoadingReferral: boolean = true;
+
+  /**
+   * Whether the component is currently loading
    * the last paid out reward or not.
    * @var {boolean}
    */
@@ -245,6 +261,18 @@ export default class RewardsDashboard extends Vue {
   protected lastClickedReward: RewardDTO;
 
   /**
+   * The referral code of the friend ("referred by").
+   * @var {string}
+   */
+  protected friendReferralCode: string;
+
+  /**
+   * The user's referral code.
+   * @var {string}
+   */
+  protected myReferralCode: string;
+
+  /**
    * The status poll timeout instance.
    * @var {any}
    */
@@ -281,7 +309,7 @@ export default class RewardsDashboard extends Vue {
       return '#';
     }
 
-    return this.stravaApp.getAuthorizeUrl(this.account)
+    return this.stravaApp.getAuthorizeUrl(this.account, this.friendReferralCode);
   }
 
   /**
@@ -382,6 +410,7 @@ export default class RewardsDashboard extends Vue {
     this.stravaApp = new StravaAppService(this.factory)
     await this.refreshData();
 
+    // register status poll until linked or timeout
     if (! this.isAccountLinked) {
       // check status again after 15 seconds
       this.statusPoll = setTimeout(this.refreshData.bind(this), 15000);
@@ -390,6 +419,11 @@ export default class RewardsDashboard extends Vue {
       setInterval(() => {
         clearTimeout(this.statusPoll);
       }, 150000);
+    }
+    // account is linked, feed referral code
+    else {
+        this.myReferralCode = await this.stravaApp.getAccountRefCode(this.account);
+        this.isLoadingReferral = false;
     }
   }
 

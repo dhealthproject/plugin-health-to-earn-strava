@@ -16,6 +16,7 @@ import { delay } from 'rxjs/operators';
 import {
   Account,
   Address,
+  Crypto,
   Deadline,
   Mosaic,
   MosaicId,
@@ -130,6 +131,9 @@ export const authorize = functions.https.onRequest((request: any, response: any)
   try { Address.createFromRawAddress(data['dhealth.address']) }
   catch (e) { return response.sendStatus(400); }
 
+  // verifies presence on referral code
+  const referral = 'ref' in data && data['ref'].length ? `:${data['ref']}` : '';
+
   // reads environment configuration
   const stravaConf = functions.config().strava;
 
@@ -140,7 +144,7 @@ export const authorize = functions.https.onRequest((request: any, response: any)
     + `&approval_prompt=auto`
     + `&scope=activity:read`
     + `&redirect_uri=${encodeURIComponent(stravaConf.oauth_url)}` // should be /link
-    + `&state=${data['dhealth.address']}`; // forwards address
+    + `&state=${data['dhealth.address']}${referral}`; // forwards address and refcode
 
   return response.redirect(301,
     'https://www.strava.com/oauth/authorize' + stravaQuery
@@ -180,8 +184,12 @@ export const link = functions.https.onRequest((request: any, response: any) => {
     return response.sendStatus(400);
   }
 
+  // splits state param in `ADDRESS:REFERRAL` if necessary
+  let stateMatch = data['state'].match(/([A-Z0-9]{39})(\:([a-z0-9]{8}))?/),
+      dhpAddress = stateMatch[1],
+      referredBy = stateMatch.length > 3 ? stateMatch[3] : '';
+
   // parses address to validate content or bail out
-  const dhpAddress = data['state'];
   try { Address.createFromRawAddress(dhpAddress) }
   catch (e) { return response.sendStatus(400); }
 
@@ -201,9 +209,10 @@ export const link = functions.https.onRequest((request: any, response: any) => {
     DATABASE.collection('users').doc('' + athlete.id).set({
       address,
       athleteId: athlete.id,
-      // accessToken: res.data.access_token,
-      // refreshToken: res.data.refresh_token,
-      // accessExpiresAt: res.data.expires_at,
+      accessToken: res.data.access_token,
+      refreshToken: res.data.refresh_token,
+      accessExpiresAt: res.data.expires_at,
+      referredBy: referredBy,
       linkedAt: new Date().valueOf(),
     }, { merge: true })
     .then((user: any) => {
@@ -326,6 +335,71 @@ export const payout = functions.pubsub.schedule('every 1 minutes').onRun(async (
     ),
   ));
   return null;
+});
+
+/**
+ * @function  referral
+ * @link      /health-to-earn/us-central1/referral
+ *
+ * This request handler handles referral requests
+ * and responds with a user's referral code.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+export const referral = functions.https.onRequest((request: any, response: any) => {
+  // validate HTTP method, must be GET
+  if (request.method !== 'GET') {
+    return response.sendStatus(403);
+  }
+
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /referral request with query: ", request.query);
+
+  // param `dhealth.address` is obligatory
+  const data = request.query;
+  if (!('dhealth.address' in data)) {
+    return response.sendStatus(400);
+  }
+
+  // parses address to validate content or bail out
+  try { Address.createFromRawAddress(data['dhealth.address']) }
+  catch (e) { return response.sendStatus(400); }
+
+  // finds user by address
+  const users = DATABASE.collection('users');
+  users.where('address', '==', data['dhealth.address'])
+    .get()
+    .then((snapshot: any) => {
+      if (snapshot.empty) {
+        // 404 - Not Found
+        return response.sendStatus(404);
+      }
+
+      // read singular user entry
+      const entry = snapshot.docs[0];
+
+      // tries to read already existing referral code
+      let referralCode = entry.data().referralCode;
+      if (!referralCode || !referralCode.length) {
+        // generates random 4 bytes referral code
+        referralCode = Buffer.from(Crypto.randomBytes(4)).toString('hex');
+
+        // updates firestore entry (users)
+        DATABASE.collection('users').doc(entry.id).update({
+          referralCode: referralCode
+        });
+      }
+
+      // 200 - OK
+      return response.status(200).json({ referralCode: referralCode });
+    })
+    .catch((reason: any) => {
+      // traces errors for monitoring
+      functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
+      return response.sendStatus(500);
+    });
 });
 /// end-region cloud scheduler functions
 

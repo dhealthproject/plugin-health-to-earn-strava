@@ -45,7 +45,7 @@ export class ReferralBonus {
 
     // Error Case - fallback to multiplier = 1
     if (! usersSnapshot.size) {
-      return Promise.resolve(1);
+      return 1;
     }
 
     // reads user details
@@ -54,20 +54,20 @@ export class ReferralBonus {
     // Case 1 - NOT REFERRED: multiplier = 1
     if (!('referredBy' in user.data())) {
       // not a referred user
-      return Promise.resolve(1);
+      return 1;
     }
 
     // Case 2 - COUNTER NOT SET: multiplier = 1
     if (! ('countRewards' in user.data()) || user.data().countRewards <= 0) {
-      return Promise.resolve(1);
+      return 1;
     }
 
     // Case 3 - FIRST ACTIVITY: multiplier = 2
     if (1 === user.data().countRewards) {
-      return Promise.resolve(2);
+      return 2;
     }
 
-    return Promise.resolve(1);
+    return 1;
   }
 
   /**
@@ -97,7 +97,7 @@ export class ReferralBonus {
 
     // Error Case - fallback to bonus = 0
     if (! usersSnapshot.size) {
-      return Promise.resolve(0);
+      return 0;
     }
 
     // reads user details
@@ -106,34 +106,34 @@ export class ReferralBonus {
     // Case 1 - NOT REFERRED: bonus = 0
     if (!('referredBy' in user.data()) || !user.data().referredBy.length) {
       // not a referred user
-      return Promise.resolve(0);
+      return 0;
     }
 
     // Case 2 - COUNTER NOT SET: bonus = 0
     if (! ('countRewards' in user.data()) || user.data().countRewards <= 0) {
-      return Promise.resolve(0);
+      return 0;
     }
 
     // Case 3 - FIRST ACTIVITY: bonus = 0.100000 DHP
     if (1 === user.data().countRewards) {
-      return Promise.resolve(100000); // 0.100000 DHP
+      return 100000; // 0.100000 DHP
     }
 
     // Case 4 - THIRD ACTIVITY: bonus = 0.200000 DHP
     if (3 === user.data().countRewards) {
-      return Promise.resolve(200000); // 0.200000 DHP
+      return 200000; // 0.200000 DHP
     }
 
     // Case 5 - FIFTH ACTIVITY: bonus = 0.300000 DHP
     if (5 === user.data().countRewards) {
-      return Promise.resolve(300000); // 0.300000 DHP
+      return 300000; // 0.300000 DHP
     }
 
     // Case 6 - TENTH ACTIVITY: bonus = 0.500000 DHP
     if (10 === user.data().countRewards) {
-      return Promise.resolve(500000); // 0.500000 DHP
+      return 500000; // 0.500000 DHP
     }
 
-    return Promise.resolve(0);
+    return 0;
   }
 }

@@ -51,6 +51,9 @@ const NDAPP = Account.createFromPrivateKey(
   NETWORK.networkIdentifier,
 );
 
+// database custom configuration
+DATABASE.settings({ ignoreUndefinedProperties: true });
+
 /// region cloud functions
 /**
  * @function  status
@@ -256,7 +259,7 @@ export const link = functions.https.onRequest((request: any, response: any) => {
   // splits state param in `ADDRESS:REFERRAL` if necessary
   let stateMatch = data['state'].match(/([A-Z0-9]{39})(\:([a-z0-9]{8}))?/),
       dhpAddress = stateMatch[1],
-      referredBy = stateMatch.length > 3 ? stateMatch[3] : '';
+      referredBy = !!stateMatch[3] ? stateMatch[3] : '';
 
   // parses address to validate content or bail out
   try { Address.createFromRawAddress(dhpAddress) }
@@ -296,7 +299,7 @@ export const link = functions.https.onRequest((request: any, response: any) => {
         countUsers: admin.firestore.FieldValue.increment(1),
       }, { merge: true });
 
-      if (referredBy.length > 0) {
+      if (!!referredBy && referredBy.length > 0) {
         DATABASE.doc(`statistics/${referredBy}`).set({
           countReferrals: admin.firestore.FieldValue.increment(1),
         }, { merge: true });

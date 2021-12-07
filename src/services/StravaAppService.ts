@@ -8,7 +8,7 @@
  * @license     LGPL-3.0
  */
 import Vue from 'vue';
-import { Address, MosaicId, NetworkType, Order, PublicAccount, RepositoryFactoryHttp, TransactionGroup, TransactionType, TransferTransaction } from '@dhealth/sdk';
+import { Address, AggregateTransaction, AggregateTransactionInfo, MosaicId, NetworkType, Order, PublicAccount, RepositoryFactoryHttp, TransactionInfo, TransactionGroup, TransactionType, TransferTransaction } from '@dhealth/sdk';
 const axios = require('axios').default;
 
 /**
@@ -172,6 +172,7 @@ export class StravaAppService {
         pageSize: 100,
         group: TransactionGroup.Confirmed,
         order: Order.Desc,
+        embedded: true,
       }).toPromise();
 
       // maps to table fields
@@ -179,7 +180,9 @@ export class StravaAppService {
         date: t.message.payload,
         height: t.transactionInfo.height.compact(),
         amount: t.mosaics[0].amount.compact(),
-        hash: t.transactionInfo.hash,
+        hash: !!t.transactionInfo.hash
+          ? (t.transactionInfo as TransactionInfo).hash
+          : (t.transactionInfo as AggregateTransactionInfo).aggregateHash,
       })));
     });
   }
@@ -204,6 +207,7 @@ export class StravaAppService {
         group: TransactionGroup.Confirmed,
         order: Order.Desc,
         transferMosaicId: this.networkMosaicId,
+        embedded: true,
       }).toPromise();
 
       if (!transactions || !('data' in transactions) || !transactions.data.length) {
@@ -216,7 +220,9 @@ export class StravaAppService {
         date: transaction.message.payload,
         height: transaction.transactionInfo.height.compact(),
         amount: transaction.mosaics[0].amount.compact(),
-        hash: transaction.transactionInfo.hash,
+        hash: !!transaction.transactionInfo.hash
+          ? (transaction.transactionInfo as TransactionInfo).hash
+          : (transaction.transactionInfo as AggregateTransactionInfo).aggregateHash,
       });
     });
   }
@@ -237,10 +243,15 @@ export class StravaAppService {
       const repository = this.factory.createTransactionRepository();
 
       // requests /transactions/confirmed
-      const transaction = await repository.getTransaction(
+      let transaction = await repository.getTransaction(
         reward.hash,
         TransactionGroup.Confirmed,
-      ).toPromise() ;
+      ).toPromise();
+
+      // unpack aggregate reward transactions (first is actual reward)
+      if (transaction.type === TransactionType.AGGREGATE_COMPLETE) {
+        transaction = (transaction as AggregateTransaction).innerTransactions[0];
+      }
 
       return resolve(transaction as TransferTransaction);
     });

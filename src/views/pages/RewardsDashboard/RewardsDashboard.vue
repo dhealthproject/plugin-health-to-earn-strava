@@ -32,7 +32,10 @@
           <div class="status-label"><span>Referral code</span></div>
           <div class="status-value">
             <IconLoading v-if="isLoadingReferral" />
-            <span v-else><b>{{ myReferralCode }}</b></span>
+            <div v-else>
+              <b>{{ myReferralCode }}</b>
+              <ButtonCopy v-model="myReferralCode" />
+            </div>
           </div>
         </div>
         <div class="value-container">
@@ -154,7 +157,7 @@ const BigNumber = require('bignumber.js');
 const axios = require('axios').default;
 const moment = require('moment');
 import { Component, Vue, Prop } from 'vue-property-decorator';
-import { ButtonRefresh, GenericTableDisplay, GenericTableRow, IconLoading } from '@dhealth/wallet-components';
+import { ButtonCopy, ButtonRefresh, GenericTableDisplay, GenericTableRow, IconLoading } from '@dhealth/wallet-components';
 import { Address, RepositoryFactoryHttp } from '@dhealth/sdk';
 
 // internal dependencies
@@ -165,6 +168,7 @@ import ModalRewardViewer from '../../modals/ModalRewardViewer/ModalRewardViewer.
 
 @Component({
   components: {
+    ButtonCopy,
     ButtonRefresh,
     GenericTableDisplay,
     GenericTableRow,

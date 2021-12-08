@@ -68,8 +68,8 @@
         <p v-if="!isAccountLinked && hasRewards"
           class="alert-warning mb40">
           This account was previously linked to a Strava account but has been unlinked and is not
-          actively linked to a Strava account anymore. Consequently, this account will not receive
-          any more rewards. You can re-authorize the account if you wish to continue using this one.
+          actively linked to a Strava account anymore. You must re-authorize this account to make
+          use of your rewards dashboard.
         </p>
         <p v-else-if="!isAccountLinked" class="mb40">
           Authorize our Strava&trade; App <b>dHealth to Earn</b> with your Strava&trade; account by clicking the button below.
@@ -268,7 +268,7 @@ export default class RewardsDashboard extends Vue {
    * The referral code of the friend ("referred by").
    * @var {string}
    */
-  protected friendReferralCode: string;
+  protected friendReferralCode: string = '';
 
   /**
    * The user's referral code.
@@ -493,6 +493,12 @@ export default class RewardsDashboard extends Vue {
       // if linked, stop polling
       if (this.isAccountLinked && !!this.statusPoll) {
         clearTimeout(this.statusPoll);
+      }
+
+      // if linked, and refcode unknown
+      if (this.isAccountLinked && this.isLoadingReferral) {
+        this.myReferralCode = await this.stravaApp.getAccountRefCode(this.account);
+        this.isLoadingReferral = false;
       }
 
       // reads transaction of account and formats amounts

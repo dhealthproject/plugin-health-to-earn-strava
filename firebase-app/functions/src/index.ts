@@ -16,6 +16,8 @@ import { delay } from 'rxjs/operators';
 import {
   Account,
   Address,
+  AggregateTransaction,
+  Crypto,
   Deadline,
   Mosaic,
   MosaicId,
@@ -28,6 +30,7 @@ import {
 
 // internal dependencies
 import { SkewNormalDistribution } from './math';
+import { ReferralBonus } from './referral';
 
 // /!\ CAUTION /!\ 
 // /!\ reads service account
@@ -47,6 +50,9 @@ const NDAPP = Account.createFromPrivateKey(
   functions.config().dhealth.account.secret,
   NETWORK.networkIdentifier,
 );
+
+// database custom configuration
+DATABASE.settings({ ignoreUndefinedProperties: true });
 
 /// region cloud functions
 /**
@@ -103,6 +109,73 @@ export const status = functions.https.onRequest((request: any, response: any) =>
 });
 
 /**
+ * @function  referral
+ * @link      /health-to-earn/us-central1/referral
+ *
+ * Optional step to retrieve referral code.
+ * 
+ * This request handler handles referral requests
+ * and responds with a user's referral code.
+ *
+ * @params    {Request}   request
+ * @params    {Response}  response
+ * @returns   {void}
+ */
+ export const referral = functions.https.onRequest((request: any, response: any) => {
+  // validate HTTP method, must be GET
+  if (request.method !== 'GET') {
+    return response.sendStatus(403);
+  }
+
+  // traces calls for monitoring
+  functions.logger.log("[DEBUG] Now handling /referral request with query: ", request.query);
+
+  // param `dhealth.address` is obligatory
+  const data = request.query;
+  if (!('dhealth.address' in data)) {
+    return response.sendStatus(400);
+  }
+
+  // parses address to validate content or bail out
+  try { Address.createFromRawAddress(data['dhealth.address']) }
+  catch (e) { return response.sendStatus(400); }
+
+  // finds user by address
+  const users = DATABASE.collection('users');
+  users.where('address', '==', data['dhealth.address'])
+    .get()
+    .then((snapshot: any) => {
+      if (snapshot.empty) {
+        // 404 - Not Found
+        return response.sendStatus(404);
+      }
+
+      // read singular user entry
+      const entry = snapshot.docs[0];
+
+      // tries to read already existing referral code
+      let referralCode = entry.data().referralCode;
+      if (!referralCode || !referralCode.length) {
+        // generates random 4 bytes referral code
+        referralCode = Buffer.from(Crypto.randomBytes(4)).toString('hex');
+
+        // updates firestore entry (users)
+        DATABASE.collection('users').doc(entry.id).update({
+          referralCode: referralCode
+        });
+      }
+
+      // 200 - OK
+      return response.status(200).json({ referralCode: referralCode });
+    })
+    .catch((reason: any) => {
+      // traces errors for monitoring
+      functions.logger.error("[ERROR] Error happened with Firestore: ", reason);
+      return response.sendStatus(500);
+    });
+});
+
+/**
  * @function  authorize
  * @link      /health-to-earn/us-central1/authorize
  *
@@ -130,6 +203,9 @@ export const authorize = functions.https.onRequest((request: any, response: any)
   try { Address.createFromRawAddress(data['dhealth.address']) }
   catch (e) { return response.sendStatus(400); }
 
+  // verifies presence on referral code
+  const referral = 'ref' in data && data['ref'].length ? `:${data['ref']}` : '';
+
   // reads environment configuration
   const stravaConf = functions.config().strava;
 
@@ -140,7 +216,7 @@ export const authorize = functions.https.onRequest((request: any, response: any)
     + `&approval_prompt=auto`
     + `&scope=activity:read`
     + `&redirect_uri=${encodeURIComponent(stravaConf.oauth_url)}` // should be /link
-    + `&state=${data['dhealth.address']}`; // forwards address
+    + `&state=${data['dhealth.address']}${referral}`; // forwards address and refcode
 
   return response.redirect(301,
     'https://www.strava.com/oauth/authorize' + stravaQuery
@@ -180,8 +256,12 @@ export const link = functions.https.onRequest((request: any, response: any) => {
     return response.sendStatus(400);
   }
 
+  // splits state param in `ADDRESS:REFERRAL` if necessary
+  let stateMatch = data['state'].match(/([A-Z0-9]{39})(\:([a-z0-9]{8}))?/),
+      dhpAddress = stateMatch[1],
+      referredBy = !!stateMatch[3] ? stateMatch[3] : '';
+
   // parses address to validate content or bail out
-  const dhpAddress = data['state'];
   try { Address.createFromRawAddress(dhpAddress) }
   catch (e) { return response.sendStatus(400); }
 
@@ -197,16 +277,38 @@ export const link = functions.https.onRequest((request: any, response: any) => {
     const athlete = res.data.athlete;
     const address = dhpAddress;
 
+    // generates random 4 bytes referral code
+    const referralCode = Buffer.from(Crypto.randomBytes(4)).toString('hex');
+
     // saves the user in database
     DATABASE.collection('users').doc('' + athlete.id).set({
       address,
       athleteId: athlete.id,
-      // accessToken: res.data.access_token,
-      // refreshToken: res.data.refresh_token,
-      // accessExpiresAt: res.data.expires_at,
+      accessToken: res.data.access_token,
+      refreshToken: res.data.refresh_token,
+      accessExpiresAt: res.data.expires_at,
+      referredBy: referredBy,
+      referralCode: referralCode,
+      countRewards: 0,
       linkedAt: new Date().valueOf(),
     }, { merge: true })
     .then((user: any) => {
+
+      // updates aggregations
+      DATABASE.doc('statistics/--counters--').set({
+        countUsers: admin.firestore.FieldValue.increment(1),
+      }, { merge: true });
+
+      if (!!referredBy && referredBy.length > 0) {
+        DATABASE.doc(`statistics/${referredBy}`).set({
+          countReferrals: admin.firestore.FieldValue.increment(1),
+        }, { merge: true });
+
+        DATABASE.doc('statistics/--counters--').set({
+          countReferrals: admin.firestore.FieldValue.increment(1),
+        }, { merge: true });
+      }
+
       // ends the link process
       return response.redirect(301,
         'https://health-to-earn.web.app/link.html'
@@ -223,31 +325,6 @@ export const link = functions.https.onRequest((request: any, response: any) => {
     functions.logger.error("[ERROR] Error calling Strava /oauth/token: ", reason);
     return response.sendStatus(400);
   })
-});
-
-/**
- * @function  unlink
- * @link      /health-to-earn/us-central1/unlink
- *
- * Optional Step of the dHealth <> Strava link process.
- *
- * This request handler handles the callback of a
- * cancellation of link between a Strava account and
- * a dHealth address.
- *
- * @params    {Request}   request
- * @params    {Response}  response
- * @returns   {void}
- */
-export const unlink = functions.https.onRequest((request: any, response: any) => {
-  // traces calls for monitoring
-  functions.logger.log("[DEBUG] Now handling /unlink request with query: ", request.query);
-
-  //XXX use refreshToken to get accessToken
-  //XXX use accessToken to GET /athlete
-  //XXX remove database `address` value
-
-  return response.sendStatus(501);
 });
 
 /**
@@ -317,14 +394,18 @@ export const payout = functions.pubsub.schedule('every 1 minutes').onRun(async (
   functions.logger.log("[DEBUG] Found non-zero unprocessed rewards count: ", snapshot.size);
 
   // proceeds to payout for each unprocessed reward with delay of 1000ms
-  snapshot.forEach((r: any) => broadcastRewardPayout(r).pipe(delay(1000)).subscribe(
-    (res: any) => functions.logger.log(
-      `[DEBUG] Successfully broadcast transaction for ${r.id}`
-    ),
-    (err: any) => functions.logger.error(
-      `[ERROR] Could not broadcast transaction for ${r.id}, reason: ${err}`
-    ),
-  ));
+  snapshot.forEach((r: any) => getBonusesForReward(r).then(
+    b => broadcastRewardPayout(r, b.multiplier, b.referrerBonus).pipe(delay(1000)).subscribe(
+      (res: any) => functions.logger.log(
+        `[DEBUG] Successfully broadcast transaction for ${r.id}`
+      ),
+      (err: any) => functions.logger.error(
+        `[ERROR] Could not broadcast transaction for ${r.id}, reason: ${err}`
+      ),
+    )).catch(reason => functions.logger.error(
+      `[ERROR] Could not get bonuses for ${r.id}, reason: ${reason}`
+    ))
+  );
   return null;
 });
 /// end-region cloud scheduler functions
@@ -418,7 +499,14 @@ const webhookEventHandler = async (request: any, response: any) => {
     // Step 1: searches the user by it's Strava id
     const user: any = await DATABASE.doc(`users/${data['owner_id']}`).get();
 
-    // bails out for unknown users
+    let referrer: any = undefined;
+    if ('referredBy' in user.data() && user.data().referredBy.length) {
+      referrer = await DATABASE.collection('users')
+        .where('referralCode', '==', user.data().referredBy)
+        .get();
+    }
+
+    // bails out for unknown ATHLETE
     if (! user.exists) {
       return response.status(200).send('EVENT_IGNORED');
     }
@@ -452,7 +540,18 @@ const webhookEventHandler = async (request: any, response: any) => {
       isProcessed: false,
       isConfirmed: false,
       rewardDay: formattedDate,
+      referrerAddress: !!referrer && !referrer.empty ? referrer.docs[0].data().address : null,
       activityAt: moment(rewardedDate).format('YYYY-MM-DD HH:mm:ss Z'),
+    }, { merge: true });
+
+    // ------
+    // Step 4: Updates statistics / aggregations
+    await DATABASE.doc('statistics/--counters--').set({
+      countRewards: admin.firestore.FieldValue.increment(1),
+    }, { merge: true });
+
+    await DATABASE.doc(`users/${athleteId}`).set({
+      countRewards: admin.firestore.FieldValue.increment(1),
     }, { merge: true });
 
     // Job Successful
@@ -467,50 +566,136 @@ const webhookEventHandler = async (request: any, response: any) => {
 };
 
 /**
+ * Loop handler which executes a calculation of the rewards
+ * multiplier.  The multiplier is affected by referrals and
+ * the number of rewards received by the user(s).
+ *
+ * @see {ReferralBonus}
+ * @param   {any}   reward 
+ * @returns {Promise<number>}
+ */
+const getBonusesForReward = async (reward: any): Promise<{multiplier: number, referrerBonus: number}> => {
+  // aggregations done by address
+  const address = reward.data().address;
+
+  // calculates multiplier for payout
+  const multiplier = await ReferralBonus.getPayoutMultiplier(
+    DATABASE,
+    Address.createFromRawAddress(address),
+  );
+
+  // calculates bonus for REFERRER
+  const referrerBonus = await ReferralBonus.getReferrerBonus(
+    DATABASE,
+    Address.createFromRawAddress(address),
+  );
+
+  return {
+    multiplier,
+    referrerBonus,
+  };
+};
+
+/**
  * Loop handler which executes reward payouts using dHealth
  * Network for a `rewards`  entry as provided in \a reward.
  *
  * This method uses a {@link SkewNormalDistribution}  class
  * to generate the amount that will be sent to the rewarded
- * user.
+ * user.  Additionally, a payout multiplier will be applied
+ * to rewards from referred users, the multiplier should be
+ * passed as the second argument to this function.
+ *
+ * The third and last argument of this function defines the
+ * referrer bonus amount. This amount, if non-zero, will be
+ * sent to the referrer. Amounts are defined in the helpers
+ * of {@link ReferralBonus}.
  *
  * The signed transaction is broadcast using a node of  the
- * list in `NETWORK.nodes`.
+ * list in `NETWORK.nodes`. The signed transaction can be a
+ * TRANSFER, or an AGGREGATE COMPLETE with 2 inner TRANSFER
+ * transactions.
  *
  * @see {SkewNormalDistribution}
- * @param     {any}   reward      The rewards entry (Firestore).
+ * @param     {any}       reward        The rewards entry (Firestore).
+ * @param     {number}    multiplier    The payout multiplier.
+ * @param     {number}    referrerBonus The referrer bonus amount (can be 0).
  * @returns   {void}
  */
-const broadcastRewardPayout = (reward: any) => {
+const broadcastRewardPayout = (
+  reward: any,
+  multiplier: number,
+  referrerBonus: number,
+) => {
   // uses the user's dHealth address
   const recipient = reward.data().address;
+  const referrer  = reward.data().referrerAddress;
 
   // uses skew-normal distribution to get amount
   const skewer = new SkewNormalDistribution(0.8);
-  const amountDHP = skewer.value;
-
-  // prepares attached mosaic
-  const mosaics: Mosaic[] = [];
-  mosaics.push(new Mosaic(
-    new MosaicId(NETWORK.currencyMosaicId),
-    UInt64.fromUint(amountDHP),
-  ));
+  const amountDHP = skewer.value * multiplier;
 
   // prepares a dHealth network transaction
-  const transaction = TransferTransaction.create(
+  let signedTransaction: SignedTransaction;
+
+  // transfers from NDAPP to recipient
+  const transferToAthlete = TransferTransaction.create(
     Deadline.create(NETWORK.epochAdjustment),
     Address.createFromRawAddress(recipient),
-    mosaics,
+    [
+      new Mosaic(
+        new MosaicId(NETWORK.currencyMosaicId),
+        UInt64.fromUint(amountDHP),
+      )
+    ],
     PlainMessage.create(reward.data().rewardDay),
     NETWORK.networkIdentifier,
-    UInt64.fromUint(20000), // 0.020000 DHP
+    UInt64.fromUint(0), // 0 DHP
   );
 
-  // signs and broadcasts the transaction
-  const signedTransaction: SignedTransaction = NDAPP.sign(
-    transaction,
-    NETWORK.generationHash,
-  );
+  // CASE 1: Aggregate complete transfers (with referrer bonus)
+  if (referrerBonus > 0 && !!referrer && referrer.length === 39) {
+    // transfers from NDAPP to referrer
+    const transferToReferrer = TransferTransaction.create(
+      Deadline.create(NETWORK.epochAdjustment),
+      Address.createFromRawAddress(referrer),
+      [
+        new Mosaic(
+          new MosaicId(NETWORK.currencyMosaicId),
+          UInt64.fromUint(referrerBonus),
+        )
+      ],
+      PlainMessage.create(reward.data().rewardDay),
+      NETWORK.networkIdentifier,
+      UInt64.fromUint(0), // 0 DHP
+    );
+
+    const aggregateTransfers = AggregateTransaction.createComplete(
+      Deadline.create(NETWORK.epochAdjustment),
+      [
+        transferToAthlete.toAggregate(NDAPP.publicAccount),
+        transferToReferrer.toAggregate(NDAPP.publicAccount),
+      ],
+      NETWORK.networkIdentifier,
+      [],
+      UInt64.fromUint(30000), // 0.030000 DHP
+    );
+
+    // signs the aggregate transaction
+    signedTransaction = NDAPP.sign(
+      aggregateTransfers,
+      NETWORK.generationHash,
+    );
+  }
+
+  // CASE 2: Simple transfer (no referrer bonus)
+  else {
+    // signs the simple transfer transaction
+    signedTransaction = NDAPP.sign(
+      transferToAthlete,
+      NETWORK.generationHash,
+    );
+  }
 
   // picks a *random* node of the list
   const N = NETWORK.nodes.length;
@@ -524,8 +709,10 @@ const broadcastRewardPayout = (reward: any) => {
   // updates firestore entry
   DATABASE.collection('rewards').doc(reward.id).update({
     isProcessed: true,
+    rewardAmount: amountDHP,
+    rewardMultiplier: multiplier,
+    referrerBonus: referrerBonus,
     transactionHash: signedTransaction.hash,
-    transactionByte: signedTransaction.payload,
     transactionNode: nodeUrl,
   });
 

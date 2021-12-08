@@ -68,24 +68,6 @@
             </template>
           </FormRow>
 
-          <FormRow class-name="block-height-container mt0 mb0">
-            <template v-slot:label>Signature:</template>
-            <template v-slot:inputs>
-              <div class="inputs-container with-button">
-                <IconLoading v-if="isLoadingTransactionInfo" />
-                <div v-else>
-                  <input
-                    v-model="transaction.signature"
-                    class="input-size input-style"
-                    placeholder="Waiting for block information"
-                    type="text"
-                    disabled="disabled"
-                  />
-                  <ButtonCopy v-model="transaction.signature" />
-                </div>
-              </div>
-            </template>
-          </FormRow>
         </div>
       </div>
     </Modal>
@@ -163,13 +145,6 @@ export default class ModalRewardViewer extends Vue {
    * @var {number}
    */
   protected lastRenderTime: number = new Date().valueOf();
-
-  /**
-   * Whether the widget is currently loading
-   * the transaction information.
-   * @var {boolean}
-   */
-  protected isLoadingTransactionInfo: boolean = true;
 
   /**
    * Whether the widget is currently loading
@@ -286,7 +261,6 @@ export default class ModalRewardViewer extends Vue {
 
     // uses factory to retrieve a network transaction
     this.transaction = await this.stravaApp.getRewardTransaction(this.reward);
-    this.isLoadingTransactionInfo = false;
     this.isLoadingBlockInfo = true;
 
     // uses factory to retrieve currently connected network

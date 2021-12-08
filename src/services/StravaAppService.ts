@@ -8,7 +8,7 @@
  * @license     LGPL-3.0
  */
 import Vue from 'vue';
-import { Address, MosaicId, NetworkType, Order, PublicAccount, RepositoryFactoryHttp, TransactionGroup, TransactionType, TransferTransaction } from '@dhealth/sdk';
+import { Address, AggregateTransaction, AggregateTransactionInfo, MosaicId, NetworkType, Order, PublicAccount, RepositoryFactoryHttp, TransactionInfo, TransactionGroup, TransactionType, TransferTransaction } from '@dhealth/sdk';
 const axios = require('axios').default;
 
 /**
@@ -87,10 +87,14 @@ export class StravaAppService {
    * to the Strava /oauth/authorize route.
    *
    * @param   {Address}   account
+   * @param   {string}    refCode   (Optional)
    * @returns {string}
    */
-  public getAuthorizeUrl(account: Address): string {
-    const query = `?dhealth.address=${account.plain()}`;
+  public getAuthorizeUrl(account: Address, refCode?: string): string {
+    let query = `?dhealth.address=${account.plain()}`;
+    if (!!refCode && refCode.length) {
+      query += `&ref=${refCode}`;
+    }
     return `${this.backendUrl}/authorize${query}`;
   }
 
@@ -120,6 +124,32 @@ export class StravaAppService {
   }
 
   /**
+   * Returns an account's referral code.
+   *
+   * @returns {Promise<string>}
+   */
+  public async getAccountRefCode(
+    account: Address,
+  ): Promise<string> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await axios
+          .get(this.getReferralUrl(account))
+          .catch((error) => ({ status: 'response' in error ? error.response.status : 400 }));
+
+        if (response.status !== 200) {
+          return reject(`Could not retrieve the referral code.`);
+        }
+
+        return resolve(response.data.referralCode);
+      }
+      catch (err) {
+        return reject(`Could not retrieve the referral code.`);
+      }
+    });
+  }
+
+  /**
    * Connects to a node using the factory to request
    * transactions issued by the  Health to Earn with
    * Strava dapp account.
@@ -142,6 +172,7 @@ export class StravaAppService {
         pageSize: 100,
         group: TransactionGroup.Confirmed,
         order: Order.Desc,
+        embedded: true,
       }).toPromise();
 
       // maps to table fields
@@ -149,7 +180,9 @@ export class StravaAppService {
         date: t.message.payload,
         height: t.transactionInfo.height.compact(),
         amount: t.mosaics[0].amount.compact(),
-        hash: t.transactionInfo.hash,
+        hash: !!t.transactionInfo.hash
+          ? (t.transactionInfo as TransactionInfo).hash
+          : (t.transactionInfo as AggregateTransactionInfo).aggregateHash,
       })));
     });
   }
@@ -174,6 +207,7 @@ export class StravaAppService {
         group: TransactionGroup.Confirmed,
         order: Order.Desc,
         transferMosaicId: this.networkMosaicId,
+        embedded: true,
       }).toPromise();
 
       if (!transactions || !('data' in transactions) || !transactions.data.length) {
@@ -186,7 +220,9 @@ export class StravaAppService {
         date: transaction.message.payload,
         height: transaction.transactionInfo.height.compact(),
         amount: transaction.mosaics[0].amount.compact(),
-        hash: transaction.transactionInfo.hash,
+        hash: !!transaction.transactionInfo.hash
+          ? (transaction.transactionInfo as TransactionInfo).hash
+          : (transaction.transactionInfo as AggregateTransactionInfo).aggregateHash,
       });
     });
   }
@@ -207,10 +243,15 @@ export class StravaAppService {
       const repository = this.factory.createTransactionRepository();
 
       // requests /transactions/confirmed
-      const transaction = await repository.getTransaction(
+      let transaction = await repository.getTransaction(
         reward.hash,
         TransactionGroup.Confirmed,
-      ).toPromise() ;
+      ).toPromise();
+
+      // unpack aggregate reward transactions (first is actual reward)
+      if (transaction.type === TransactionType.AGGREGATE_COMPLETE) {
+        transaction = (transaction as AggregateTransaction).innerTransactions[0];
+      }
 
       return resolve(transaction as TransferTransaction);
     });
@@ -229,6 +270,17 @@ export class StravaAppService {
   protected getStatusUrl(account: Address): string {
     const query = `?dhealth.address=${account.plain()}`;
     return `${this.backendUrl}/status${query}`;
+  }
+  /**
+   * Getter for the `referralUrl` property. This value should
+   * contain the URL of an account's referral code retrieval.
+   *
+   * @param   {Address}   account
+   * @returns {string}
+   */
+  protected getReferralUrl(account: Address): string {
+    const query = `?dhealth.address=${account.plain()}`;
+    return `${this.backendUrl}/referral${query}`;
   }
   /// end-region protected API
 }

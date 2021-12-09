@@ -287,8 +287,8 @@ export const link = functions.https.onRequest((request: any, response: any) => {
       accessToken: res.data.access_token,
       refreshToken: res.data.refresh_token,
       accessExpiresAt: res.data.expires_at,
-      referredBy: referredBy,
-      referralCode: referralCode,
+      referredBy: referredBy.toLowerCase(),
+      referralCode: referralCode.toLowerCase(),
       countRewards: 0,
       linkedAt: new Date().valueOf(),
     }, { merge: true })
@@ -502,7 +502,7 @@ const webhookEventHandler = async (request: any, response: any) => {
     let referrer: any = undefined;
     if ('referredBy' in user.data() && user.data().referredBy.length) {
       referrer = await DATABASE.collection('users')
-        .where('referralCode', '==', user.data().referredBy)
+        .where('referralCode', '==', user.data().referredBy.toLowerCase())
         .get();
     }
 

@@ -257,7 +257,7 @@ export const link = functions.https.onRequest((request: any, response: any) => {
   }
 
   // splits state param in `ADDRESS:REFERRAL` if necessary
-  let stateMatch = data['state'].match(/([A-Z0-9]{39})(\:([a-z0-9]{8}))?/),
+  let stateMatch = data['state'].match(/([A-Z0-9]{39})(\:([a-zA-Z0-9]{8}))?/),
       dhpAddress = stateMatch[1],
       referredBy = !!stateMatch[3] ? stateMatch[3] : '';
 

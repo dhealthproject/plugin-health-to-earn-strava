@@ -214,7 +214,7 @@ export const authorize = functions.https.onRequest((request: any, response: any)
     + `client_id=${stravaConf.client_id}`
     + `&response_type=code`
     + `&approval_prompt=auto`
-    + `&scope=activity:read`
+    + `&scope=activity:read_all`
     + `&redirect_uri=${encodeURIComponent(stravaConf.oauth_url)}` // should be /link
     + `&state=${data['dhealth.address']}${referral}`; // forwards address and refcode
 

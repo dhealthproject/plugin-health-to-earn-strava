@@ -612,9 +612,13 @@ const getBonusesForReward = async (reward: any): Promise<{multiplier: number, re
  * of {@link ReferralBonus}.
  *
  * The signed transaction is broadcast using a node of  the
- * list in `NETWORK.nodes`. The signed transaction can be a
- * TRANSFER, or an AGGREGATE COMPLETE with 2 inner TRANSFER
- * transactions.
+ * list in `NETWORK.nodes`. The signed transaction contains
+ * 2 or 3 TRANSFER transactions embedded with the AGGREGATE
+ * COMPLETE transaction type and signed by {@link NDAPP}.
+ *
+ * The first embedded transfer transaction always goes to the
+ * athlete and the last embedded transfer transaction always
+ * goes to a donation fund.
  *
  * @see {SkewNormalDistribution}
  * @param     {any}       reward        The rewards entry (Firestore).
@@ -636,10 +640,12 @@ const broadcastRewardPayout = (
   const amountDHP = skewer.value * multiplier;
 
   // prepares a dHealth network transaction
-  let signedTransaction: SignedTransaction;
+  let signedTransaction: SignedTransaction,
+      embeddedTransactions: TransferTransaction[] = [];
 
+  // Transaction 1: Transfer to ATHLETE
   // transfers from NDAPP to recipient
-  const transferToAthlete = TransferTransaction.create(
+  embeddedTransactions.push(TransferTransaction.create(
     Deadline.create(NETWORK.epochAdjustment),
     Address.createFromRawAddress(recipient),
     [
@@ -651,12 +657,13 @@ const broadcastRewardPayout = (
     PlainMessage.create(reward.data().rewardDay),
     NETWORK.networkIdentifier,
     UInt64.fromUint(0), // 0 DHP
-  );
+  ));
 
-  // CASE 1: Aggregate complete transfers (with referrer bonus)
+  // In case a referral bonus is also paid
   if (referrerBonus > 0 && !!referrer && referrer.length === 39) {
+    // Transaction 2: Transfer to REFERRER
     // transfers from NDAPP to referrer
-    const transferToReferrer = TransferTransaction.create(
+    embeddedTransactions.push(TransferTransaction.create(
       Deadline.create(NETWORK.epochAdjustment),
       Address.createFromRawAddress(referrer),
       [
@@ -668,34 +675,38 @@ const broadcastRewardPayout = (
       PlainMessage.create(reward.data().rewardDay),
       NETWORK.networkIdentifier,
       UInt64.fromUint(0), // 0 DHP
-    );
-
-    const aggregateTransfers = AggregateTransaction.createComplete(
-      Deadline.create(NETWORK.epochAdjustment),
-      [
-        transferToAthlete.toAggregate(NDAPP.publicAccount),
-        transferToReferrer.toAggregate(NDAPP.publicAccount),
-      ],
-      NETWORK.networkIdentifier,
-      [],
-      UInt64.fromUint(30000), // 0.030000 DHP
-    );
-
-    // signs the aggregate transaction
-    signedTransaction = NDAPP.sign(
-      aggregateTransfers,
-      NETWORK.generationHash,
-    );
+    ));
   }
 
-  // CASE 2: Simple transfer (no referrer bonus)
-  else {
-    // signs the simple transfer transaction
-    signedTransaction = NDAPP.sign(
-      transferToAthlete,
-      NETWORK.generationHash,
-    );
-  }
+  // Transaction 3: #Move4Ukraine
+  // #Move4Ukraine: 50 DHP per activity donated to NDON-
+  embeddedTransactions.push(TransferTransaction.create(
+    Deadline.create(NETWORK.epochAdjustment),
+    Address.createFromRawAddress(`NDON2AI5X6PRXYDRUB6HPFCGOBZIDYS2R4MSSHY`),
+    [
+      new Mosaic(
+        new MosaicId(NETWORK.currencyMosaicId),
+        UInt64.fromUint(50000000), // 50 DHP
+      )
+    ],
+    PlainMessage.create(`#Move4Ukraine`),
+    NETWORK.networkIdentifier,
+    UInt64.fromUint(0), // 0 DHP
+  ));
+
+  const aggregateTransfers = AggregateTransaction.createComplete(
+    Deadline.create(NETWORK.epochAdjustment),
+    embeddedTransactions.map(t => t.toAggregate(NDAPP.publicAccount)),
+    NETWORK.networkIdentifier,
+    [],
+    UInt64.fromUint(30000), // 0.030000 DHP
+  );
+
+  // signs the aggregate transaction
+  signedTransaction = NDAPP.sign(
+    aggregateTransfers,
+    NETWORK.generationHash,
+  );
 
   // picks a *random* node of the list
   const N = NETWORK.nodes.length;

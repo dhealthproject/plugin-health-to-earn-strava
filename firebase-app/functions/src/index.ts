@@ -678,21 +678,23 @@ const broadcastRewardPayout = (
     ));
   }
 
+  // #Move4Ukraine Disabled on 26 March 2022
   // Transaction 3: #Move4Ukraine
   // #Move4Ukraine: 50 DHP per activity donated to NDON-
-  embeddedTransactions.push(TransferTransaction.create(
-    Deadline.create(NETWORK.epochAdjustment),
-    Address.createFromRawAddress(`NDON2AI5X6PRXYDRUB6HPFCGOBZIDYS2R4MSSHY`),
-    [
-      new Mosaic(
-        new MosaicId(NETWORK.currencyMosaicId),
-        UInt64.fromUint(50000000), // 50 DHP
-      )
-    ],
-    PlainMessage.create(`#Move4Ukraine`),
-    NETWORK.networkIdentifier,
-    UInt64.fromUint(0), // 0 DHP
-  ));
+  // embeddedTransactions.push(TransferTransaction.create(
+  //   Deadline.create(NETWORK.epochAdjustment),
+  //   Address.createFromRawAddress(`NDON2AI5X6PRXYDRUB6HPFCGOBZIDYS2R4MSSHY`),
+  //   [
+  //     new Mosaic(
+  //       new MosaicId(NETWORK.currencyMosaicId),
+  //       UInt64.fromUint(50000000), // 50 DHP
+  //     )
+  //   ],
+  //   PlainMessage.create(`#Move4Ukraine`),
+  //   NETWORK.networkIdentifier,
+  //   UInt64.fromUint(0), // 0 DHP
+  // ));
+  // #Move4Ukraine Disabled on 26 March 2022
 
   const aggregateTransfers = AggregateTransaction.createComplete(
     Deadline.create(NETWORK.epochAdjustment),

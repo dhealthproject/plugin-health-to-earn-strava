@@ -6,7 +6,7 @@
 [![dl-badge][dl-badge]][npm-url]
 [![License](https://img.shields.io/badge/License-LGPL%203.0%20only-blue.svg)](https://opensource.org/licenses/LGPL-3.0)
 
-Health to Earn powered by Strava is a showcase to earn `dhealth.dhp` on [dHealth Network][parent-url].
+[Health to Earn][self-url] powered by Strava is a showcase to earn `dhealth.dhp` on [dHealth Network][parent-url].
 
 Visit the showcase website for more information [here][showcase-url].
 
@@ -158,8 +158,9 @@ Copyright 2021-present [Grégory Saive for dHealth Network][parent-url], All rig
 
 Licensed under the [LGPL v3.0](LICENSE)
 
+[self-url]: https://health2earn.com
 [parent-url]: https://dhealth.network
 [showcase-url]: https://health-to-earn.web.app
-[npm-url]: https://www.npmjs.com/package/@dhealth/plugin-health-to-earn-strava
-[npm-badge]: https://img.shields.io/npm/v/@dhealth/plugin-health-to-earn-strava
-[dl-badge]: https://img.shields.io/npm/dt/@dhealth/plugin-health-to-earn-strava
+[npm-url]: https://www.npmjs.com/package/@dhealthdapps/health-to-earn
+[npm-badge]: https://img.shields.io/npm/v/@dhealthdapps/health-to-earn
+[dl-badge]: https://img.shields.io/npm/dt/@dhealthdapps/health-to-earn

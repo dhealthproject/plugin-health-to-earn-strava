@@ -31,6 +31,8 @@ import {
 // internal dependencies
 import { SkewNormalDistribution } from './math';
 import { ReferralBonus } from './referral';
+import { StatisticsAPI } from './statistics/api/StatisticsAPI';
+import { TransactionSaverCronJob } from './statistics/cronjobs/transaction-saver';
 
 // /!\ CAUTION /!\ 
 // /!\ reads service account
@@ -733,3 +735,13 @@ const broadcastRewardPayout = (
   return (new TransactionHttp(nodeUrl)).announce(signedTransaction);
 }
 /// end-region private API
+
+exports.statisticsCronJob = functions.pubsub.schedule('every 30 minutes')
+.onRun(async () => {
+  console.log('This will be run every 30 minutes!');
+  await new TransactionSaverCronJob().run();
+});
+
+export const health2EarnAPI =functions.https.onRequest(
+  new StatisticsAPI().getApp()
+);

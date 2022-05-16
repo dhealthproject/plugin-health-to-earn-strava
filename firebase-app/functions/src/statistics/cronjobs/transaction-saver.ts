@@ -107,19 +107,20 @@ export class TransactionSaverCronJob {
       const hash =
         txList[0].transactionInfo.hash ? txList[0].transactionInfo.hash : txList[0].transactionInfo.aggregateHash;
       console.log('proccessing:', hash);
-      firestoreBatches.push(this.writeToFirestore(txList));
-      // stops when txList's length is less than pageSize 
+      // stops when txList's length is less than pageSize
+      const txHashes = txList.map((tx: any) => {
+        if (tx.transactionInfo.hash)
+          return tx.transactionInfo.hash
+        else if (tx.transactionInfo.aggregateHash)
+          return tx.transactionInfo.aggregateHash
+      });
+      const latestHashIndex = txHashes.indexOf(this.state.latestProccessedTxHashDB);
       finished =
-        txList.length < pageSize ||
-        (
-          !!this.state.latestProccessedTxHashDB &&
-          txList.map((tx: any) => {
-            if (tx.transactionInfo.hash)
-              return tx.transactionInfo.hash
-            else if (tx.transactionInfo.aggregateHash)
-              return tx.transactionInfo.aggregateHash
-          }).includes(this.state.latestProccessedTxHashDB)
-        );
+        txList.length < pageSize || latestHashIndex > -1;
+      if (latestHashIndex > -1) {
+        txList.splice(latestHashIndex, txList.length - latestHashIndex);
+      }
+      firestoreBatches.push(this.writeToFirestore(txList));
       return finished;
     });
     await Promise.all(firestoreBatches);

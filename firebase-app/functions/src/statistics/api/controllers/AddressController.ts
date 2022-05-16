@@ -48,7 +48,7 @@ export class AddressController {
     private async getTopPaidAddresses() {
       const result:any = [];
       const resultSnapshot =
-        await FirestoreUtil.getDocumentsInCollection("addresses-async", "amount", "desc", 10);
+        await FirestoreUtil.getDocumentsInCollection("addresses-async", "amount", "desc", 20);
       resultSnapshot.forEach((doc) => {
         result.push({ address: doc.id, totalReward: doc.data().amount});
       });

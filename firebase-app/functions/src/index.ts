@@ -742,6 +742,6 @@ exports.statisticsCronJob = functions.pubsub.schedule('every 30 minutes')
   await new TransactionSaverCronJob().run();
 });
 
-export const health2EarnAPI =functions.https.onRequest(
+export const statisticsAPI =functions.https.onRequest(
   new StatisticsAPI().getApp()
 );

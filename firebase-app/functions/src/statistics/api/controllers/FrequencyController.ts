@@ -56,7 +56,12 @@ export class FrequencyController {
         const resultSnapshot = await FirestoreUtil.getDocumentInCollection(
             "transactions-async-by-date", dateStr
         );
-        result[dateStr] = resultSnapshot.data();
+        const resultOfDate: any = resultSnapshot.data();
+        result[dateStr] = {
+          averageReward: resultOfDate.amount / resultOfDate.count,
+          totalRewards: resultOfDate.amount,
+          totalTransactions: resultOfDate.count
+        }
       }
       return result;
     }

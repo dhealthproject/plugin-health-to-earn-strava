@@ -14,15 +14,16 @@
   "main": "lib/index.js",
   "dependencies": {
     "@dhealth/sdk": "^1.0.3-alpha-202110081200",
+    "axios": "^0.24.0",
+    "dhealth-utils": "^1.1.2",
     "firebase-admin": "^8.6.0",
     "firebase-functions": "^3.3.0",
-    "axios": "^0.24.0",
     "moment": "^2.29.1",
     "rxjs": "^6.6.3"
   },
   "devDependencies": {
-    "typescript": "^3.2.2",
-    "firebase-functions-test": "^0.1.6"
+    "firebase-functions-test": "^0.1.6",
+    "typescript": "^3.2.2"
   },
   "private": true
 }

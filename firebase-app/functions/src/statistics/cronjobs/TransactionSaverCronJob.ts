@@ -1,20 +1,32 @@
+/**
+ * This file is part of dHealth Wallet Plugins shared under LGPL-3.0
+ * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
+ *
+ * @package     dHealth Wallet Plugins
+ * @subpackage  Health to Earn powered by Strava
+ * @author      dHealth Network <devs@dhealth.foundation>
+ * @license     LGPL-3.0
+ */
+// external dependencies
 import { TransactionGroup, Transaction, NetworkType, Order, RepositoryFactoryHttp, TransferTransaction, TransactionType, AggregateTransactionInfo, TransactionHttp, AggregateTransaction } from '@dhealth/sdk';
 import { NetworkUtil, TransactionUtil } from 'dhealth-utils';
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-
-const serviceAccount = require('../../../.firebaseAuth.json');
-
-//==========================================================
-// Initialize Firebase
-//==========================================================
-admin.initializeApp({
-  // projectId: 'health-to-earn',
-  credential: admin.credential.cert(serviceAccount),
-});
 const db = admin.firestore();
 
+// internal dependencies
+import { LatestTransactionHash } from '../api/models';
+
+/**
+ * Cronjob to save transactions details to database.
+ */
 export class TransactionSaverCronJob {
+  /**
+   * Nodes to query block heights.
+   *
+   * @readonly
+   * @var {BlockRepository[]}
+   */
   readonly nodes = [
     new RepositoryFactoryHttp('http://dhealth-01.symbol.ninja:3000').createBlockRepository(),
     new RepositoryFactoryHttp('http://dhealth.vistiel-arch.jp:3000').createBlockRepository(),
@@ -39,12 +51,50 @@ export class TransactionSaverCronJob {
     new RepositoryFactoryHttp('http://marichi-featuring-essan.ml:3000').createBlockRepository(),
   ];
 
+  /**
+   * Health2Earn DApp reward account's public key.
+   *
+   * @access private
+   * @readonly
+   * @var {string}
+   */
   private readonly DAPP_PUBKEY = '71BC0DB348A25D163290C44EF863B031FD5251D4E3674DCE37D78FE6C5F8E0FE';
-  // private readonly DAPP_WALLET = 'NDAPPH6ZGD4D6LBWFLGFZUT2KQ5OLBLU32K3HNY';
+
+  /**
+   * Health2Earn DApp donation destination account's address.
+   *
+   * @access private
+   * @readonly
+   * @var {string}
+   */
   private readonly DONATION_RECEIVER_WALLET = 'NDON2AI5X6PRXYDRUB6HPFCGOBZIDYS2R4MSSHY';
+
+  /**
+   * Page size for transaction queries.
+   *
+   * @access private
+   * @readonly
+   * @var {number}
+   */
   private readonly pageSize = 60;
+
+  /**
+   * Number of pages to get transactions.
+   * There's a limit when we query transactions asynchronously,
+   * each node has a rate-limit of 60 requests/second.
+   *
+   * @access private
+   * @readonly
+   * @var {number}
+   */
   private readonly noOfPagesToCheckInOneGo = this.nodes.length;
 
+  /**
+   * Function state.
+   *
+   * @access private
+   * @var {object}
+   */
   private state = {
     page: 1,
     latestProccessedTxHashDB: '',
@@ -52,6 +102,9 @@ export class TransactionSaverCronJob {
     blockIndex: new Map<string, number>(),
     nodeCursor: 0,
 
+    /**
+     * Reset the function state.
+     */
     clear: () => {
       this.state.page = 1;
       this.state.latestProccessedTxHashDB = '';
@@ -61,15 +114,26 @@ export class TransactionSaverCronJob {
     }
   }
 
-  async run() {
+  /**
+   * Run method.
+   *
+   * @async
+   * @returns {Promise<void}
+   */
+  async run(): Promise<void> {
     await this.getAndSaveTransactions();
     this.state.clear();
   }
 
-  async getAndSaveTransactions() {
+  /**
+   * Get transactions from chain and save to database.
+   *
+   * @async
+   * @returns {Promise<void>}
+   */
+  async getAndSaveTransactions(): Promise<void> {
     const start = new Date().getTime();
     this.state.latestProccessedTxHashDB = (await this.getLatestProccessedTxHash())?.value;
-    // if (!latestProccessedTxHashDB) noOfPagesToCheckInOneGo = nodes.length;
     while(true) {
       const finished = await this.processTxsFromBlockchain(this.state.page, this.pageSize);
       if (finished) break;
@@ -81,6 +145,14 @@ export class TransactionSaverCronJob {
     functions.logger.log(`[DEBUG] Runtime: ${runtime / 1000}s`);
   }
 
+  /**
+   * Process transactions after getting them from chain.
+   *
+   * @async
+   * @param page 
+   * @param pageSize 
+   * @returns {Promise<boolean>}
+   */
   async processTxsFromBlockchain(page: number, pageSize: number): Promise<boolean> {
     let outgoingTxs: Promise<Transaction[]>[] = [];
     for(let i = page; i < page + this.noOfPagesToCheckInOneGo; i++) {
@@ -96,7 +168,15 @@ export class TransactionSaverCronJob {
     return await this.processTxs(pageSize, outgoingTxs);
   }
 
-  async processTxs(pageSize: number, outgoingTxs: Promise<any[]>[]) {
+  /**
+   * Process transactions.
+   *
+   * @async
+   * @param pageSize 
+   * @param outgoingTxs 
+   * @returns {Promise<boolean>}
+   */
+  async processTxs(pageSize: number, outgoingTxs: Promise<any[]>[]): Promise<boolean> {
     let finished = false;
     const results: Transaction[][] = await Promise.all(outgoingTxs);
     if (!this.state.latestProccessedTxHash)
@@ -128,7 +208,14 @@ export class TransactionSaverCronJob {
     return finished;
   }
 
-  async writeToFirestore(items: any[]) {
+  /**
+   * Write transactions to Firestore.
+   *
+   * @param {any[]} items
+   * @async
+   * @returns {Promise<void>}
+   */
+  async writeToFirestore(items: any[]): Promise<void> {
     // Get a new write batch
     const batch = db.batch();
     const txByDateCountMap = new Map<string, any>();
@@ -168,7 +255,6 @@ export class TransactionSaverCronJob {
               return;
             }
           }
-          // console.log('TX index: ', item.transactionInfo.index);
           let timestamp: number;
           try {
             timestamp = await this.getBlockTimestamp(item);
@@ -216,8 +302,9 @@ export class TransactionSaverCronJob {
 
   /**
    * Return date formatted in 'yyyyMMdd'.
+   *
    * @param {Date} date
-   * @return {string} result in string
+   * @returns {string}
    */
    formatDate(date: Date): string {
     let month = "" + (date.getUTCMonth() + 1);
@@ -232,11 +319,17 @@ export class TransactionSaverCronJob {
     return `${year}${month}${day}`;
   }
 
-  async getLatestProccessedTxHash() {
+  /**
+   * Get latest transaction hash that has been processed.
+   *
+   * @async
+   * @returns {LatestTransactionHash}
+   */
+  async getLatestProccessedTxHash(): Promise<LatestTransactionHash> {
     const docRef = db.collection('transactions-async').doc('--latestHash--');
     const docSnap = await docRef.get();
     if (docSnap.exists) {
-      return docSnap.data();
+      return docSnap.data() as LatestTransactionHash;
     } else {
       // doc.data() will be undefined in this case
       functions.logger.error('Cannot find latest hash!');
@@ -244,6 +337,13 @@ export class TransactionSaverCronJob {
     }
   }
 
+  /**
+   * Get block timestamp from transaction.
+   *
+   * @async
+   * @param {Transaction} transaction 
+   * @returns {Promise<number>}
+   */
   async getBlockTimestamp(transaction: Transaction): Promise<number> {
     if (!transaction.transactionInfo) {
       throw new Error("Transaction object doesn't have transactionInfo value");
@@ -254,17 +354,20 @@ export class TransactionSaverCronJob {
       console.log('return timestamp from index:', timestampFromIndex);
       return timestampFromIndex;
     }
-    // const node = nodes[cursor++];
     if (this.state.nodeCursor == this.noOfPagesToCheckInOneGo) this.state.nodeCursor = 0;
-    // const repositoryFactory = new RepositoryFactoryHttp(node.url);
-    // const blockHttp = repositoryFactory.createBlockRepository();
     const block = await this.nodes[this.state.nodeCursor++].getBlockByHeight(height).toPromise();
     const timestamp = NetworkUtil.getNetworkTimestampFromUInt64(NetworkType.MAIN_NET, block.timestamp);
     this.state.blockIndex.set(height.toHex(), timestamp);
     return timestamp;
   }
 
-  getActivities(bonusAmount: number) {
+  /**
+   * Get number of activities from referral bonus amount.
+   *
+   * @param {number} bonusAmount 
+   * @returns {number | undefined}
+   */
+  getActivities(bonusAmount: number): number | undefined {
     let result;
     switch(bonusAmount) {
       case 100000:

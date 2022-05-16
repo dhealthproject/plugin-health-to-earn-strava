@@ -7,4 +7,15 @@
  * @author      dHealth Network <devs@dhealth.foundation>
  * @license     LGPL-3.0
  */
-export {FirestoreUtil} from "./FirestoreUtil";
+/**
+ * @type    LatestTransactionHash
+ * Latest transaction that has been processed.
+ */
+export type LatestTransactionHash = {
+  /**
+   * Value of the transaction hash.
+   *
+   * @var {string}
+   */
+  value: string;
+}

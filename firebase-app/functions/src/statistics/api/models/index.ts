@@ -7,4 +7,6 @@
  * @author      dHealth Network <devs@dhealth.foundation>
  * @license     LGPL-3.0
  */
-export {FirestoreUtil} from "./FirestoreUtil";
+export { TopPaidAddress } from './TopPaidAddress';
+export { DayReward } from './DayReward';
+export { LatestTransactionHash } from './LatestTransactionHash';

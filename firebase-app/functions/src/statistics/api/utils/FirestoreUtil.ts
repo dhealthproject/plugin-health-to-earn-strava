@@ -1,11 +1,14 @@
+/**
+ * This file is part of dHealth Wallet Plugins shared under LGPL-3.0
+ * Copyright (C) 2021 Using Blockchain Ltd, Reg No.: 12658136, United Kingdom
+ *
+ * @package     dHealth Wallet Plugins
+ * @subpackage  Health to Earn powered by Strava
+ * @author      dHealth Network <devs@dhealth.foundation>
+ * @license     LGPL-3.0
+ */
+// external dependencies
 import * as admin from "firebase-admin";
-
-const serviceAccount = require('../../../../.firebaseAuth.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
-
 const db = admin.firestore();
 
 /**
@@ -14,7 +17,6 @@ const db = admin.firestore();
 export class FirestoreUtil {
   /**
    * Firestore Util constructor.
-   * @return {void}
    */
   constructor() {
     return;
@@ -22,6 +24,10 @@ export class FirestoreUtil {
 
   /**
    * Get a document from collection.
+   *
+   * @access public
+   * @static
+   * @async
    * @param {string} collectionName
    * @param {string} documentId
    * @return {Promise<DocumentSnapshot<DocumentData>>}
@@ -36,6 +42,10 @@ export class FirestoreUtil {
 
   /**
    * Get some/all documents from collection.
+   *
+   * @access public
+   * @static
+   * @async
    * @param {string} collectionName
    * @param {string | FieldPath} orderBy
    * @param {"asc" | "desc"} sortOrder

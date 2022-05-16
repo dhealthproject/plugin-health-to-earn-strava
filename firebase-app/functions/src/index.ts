@@ -31,8 +31,6 @@ import {
 // internal dependencies
 import { SkewNormalDistribution } from './math';
 import { ReferralBonus } from './referral';
-import { StatisticsAPI } from './statistics/api/StatisticsAPI';
-import { TransactionSaverCronJob } from './statistics/cronjobs/transaction-saver';
 
 // /!\ CAUTION /!\ 
 // /!\ reads service account
@@ -41,9 +39,12 @@ const serviceAccount = require('../.firebaseAuth.json');
 
 // initializes firebase/firestore
 admin.initializeApp({
-  projectId: 'health-to-earn',
+  // projectId: 'health-to-earn',
   credential: admin.credential.cert(serviceAccount),
 });
+
+import { StatisticsAPI } from './statistics/api/StatisticsAPI';
+import { TransactionSaverCronJob } from './statistics/cronjobs/TransactionSaverCronJob';
 
 // shortcuts
 const NETWORK = require('../config/network.json');
@@ -736,12 +737,30 @@ const broadcastRewardPayout = (
 }
 /// end-region private API
 
+/**
+ * Cronjob that runs to add transactions to database.
+ * The data will then be processed by the API to return the statistics.
+ *
+ * Runs every 30 minutes.
+ *
+ * @see {@link TransactionSaverCronJob}
+ *
+ * @returns   {void}
+ */
 exports.statisticsCronJob = functions.pubsub.schedule('every 30 minutes')
 .onRun(async () => {
   console.log('This will be run every 30 minutes!');
   await new TransactionSaverCronJob().run();
 });
 
+/**
+ * Statistics API function.
+ * Gets data from database and returns statistics.
+ *
+ * @see {@link StatisticsAPI}
+ *
+ * @returns   {void}
+ */
 export const statisticsAPI =functions.https.onRequest(
   new StatisticsAPI().getApp()
 );

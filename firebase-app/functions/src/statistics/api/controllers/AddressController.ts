@@ -32,11 +32,7 @@ export class AddressController {
    */
   constructor() {
     this.router = Router();
-    this.router.get(
-      "/",
-      async (req: Request, res: Response) =>
-        await this.getTopPaidAddressesRoute(req, res)
-    );
+    this.router.get("/", this.getTopPaidAddressesRoute);
   }
 
   /**
@@ -52,18 +48,21 @@ export class AddressController {
   /**
    * Returns top paid addresses.
    *
+   * @param {Request}   req
+   * @param {Response}  res
    * @access private
    * @return {Promise<void>}
    */
-  private async getTopPaidAddressesRoute(req: Request, res: Response) {
+  private getTopPaidAddressesRoute = async (req: Request, res: Response): Promise<void> => {
     try {
       const result = await this.getTopPaidAddresses();
       res.status(200).send({success: true, result: result});
     } catch (err) {
       if (err instanceof Error) {
         res.status(400).send({success: false, error: err.message});
+      } else {
+        res.status(400).send({success: false, error: err});
       }
-      res.status(400).send({success: false, error: err});
     }
   }
 
@@ -71,9 +70,9 @@ export class AddressController {
    * Returns top paid addresses from DB
    *
    * @access private
-   * @return {Promise<TopPaidAddress>}
+   * @return {Promise<TopPaidAddress[]>}
    */
-  private async getTopPaidAddresses(): Promise<TopPaidAddress> {
+  private async getTopPaidAddresses(): Promise<TopPaidAddress[]> {
     const result:any = [];
     const resultSnapshot =
       await FirestoreUtil.getDocumentsInCollection("addresses-async", "amount", "desc", 20);

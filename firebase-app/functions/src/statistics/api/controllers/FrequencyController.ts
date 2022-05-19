@@ -31,11 +31,7 @@ export class FrequencyController {
    */
   constructor() {
     this.router = Router();
-    this.router.get(
-      "/",
-      async (req: Request, res: Response) =>
-        await this.getTotalRewards7Days(req, res)
-    );
+    this.router.get("/", this.getTotalRewards7Days);
   }
 
   /**
@@ -52,17 +48,21 @@ export class FrequencyController {
    * Returns top paid addresses.
    *
    * @access private
+   * @async
+   * @param {Request}   req
+   * @param {Response}  res
    * @return {Promise<void>}
    */
-  private async getTotalRewards7Days(req: Request, res: Response): Promise<void> {
+  private getTotalRewards7Days = async (req: Request, res: Response): Promise<void> => {
     try {
       const result = await this.get7DaysTransactions();
       res.status(200).send({success: true, result: result});
     } catch (err) {
       if (err instanceof Error) {
         res.status(400).send({success: false, error: err.message});
+      } else {
+        res.status(400).send({success: false, error: err});
       }
-      res.status(400).send({success: false, error: err});
     }
   }
 

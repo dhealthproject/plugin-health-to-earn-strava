@@ -16,13 +16,6 @@ const db = admin.firestore();
  */
 export class FirestoreUtil {
   /**
-   * Firestore Util constructor.
-   */
-  constructor() {
-    return;
-  }
-
-  /**
    * Get a document from collection.
    *
    * @access public

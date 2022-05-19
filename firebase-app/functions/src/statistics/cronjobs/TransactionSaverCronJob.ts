@@ -52,6 +52,17 @@ export class TransactionSaverCronJob {
   ];
 
   /**
+   * The {@link TransactionHttp} instance to query aggregate inner transactions.
+   *
+   * @access private
+   * @readonly
+   * @var {TransactionHttp}
+   */
+  private readonly txHttp = new TransactionHttp(
+    'http://dual-01.dhealth.cloud:3000',
+  );
+
+  /**
    * Health2Earn DApp reward account's public key.
    *
    * @access private
@@ -100,18 +111,7 @@ export class TransactionSaverCronJob {
     latestProccessedTxHashDB: '',
     latestProccessedTxHash: '',
     blockIndex: new Map<string, number>(),
-    nodeCursor: 0,
-
-    /**
-     * Reset the function state.
-     */
-    clear: () => {
-      this.state.page = 1;
-      this.state.latestProccessedTxHashDB = '';
-      this.state.latestProccessedTxHash = '';
-      this.state.blockIndex = new Map<string, number>();
-      this.state.nodeCursor = 0;
-    }
+    nodeCursor: 0
   }
 
   /**
@@ -122,7 +122,7 @@ export class TransactionSaverCronJob {
    */
   async run(): Promise<void> {
     await this.getAndSaveTransactions();
-    this.state.clear();
+    this.clearState();
   }
 
   /**
@@ -230,12 +230,9 @@ export class TransactionSaverCronJob {
             txHash = item.transactionInfo.aggregateHash;
             if (item.transactionInfo.index > 0) {
               const activities = this.getActivities(Number(item.mosaics[0].amount));
-              const referrer = item.recipientAddress?.address;
+              const referrer = item.recipientAddress.address;
               if (activities && referrer !== this.DONATION_RECEIVER_WALLET) {
-                const txHttp = new TransactionHttp(
-                  'http://dual-01.dhealth.cloud:3000',
-                );
-                const aggregateTx = await txHttp.getTransaction(
+                const aggregateTx = await this.txHttp.getTransaction(
                   item.transactionInfo.aggregateHash, TransactionGroup.Confirmed
                 ).toPromise();
                 const innerTx: any = (aggregateTx as AggregateTransaction).innerTransactions[0] as TransferTransaction;
@@ -254,6 +251,8 @@ export class TransactionSaverCronJob {
               }
               return;
             }
+          } else {
+            return;
           }
           let timestamp: number;
           try {
@@ -345,7 +344,7 @@ export class TransactionSaverCronJob {
    * @returns {Promise<number>}
    */
   async getBlockTimestamp(transaction: Transaction): Promise<number> {
-    if (!transaction.transactionInfo) {
+    if (!transaction?.transactionInfo) {
       throw new Error("Transaction object doesn't have transactionInfo value");
     }
     const height = transaction.transactionInfo.height;
@@ -386,5 +385,21 @@ export class TransactionSaverCronJob {
         break;
     }
     return result;
+  }
+
+  /**
+   * Reset the function state.
+   *
+   * @access private
+   * @returns {void}
+   */
+  private clearState(): void {
+    this.state = {
+      page: 1,
+      latestProccessedTxHashDB: '',
+      latestProccessedTxHash: '',
+      blockIndex: new Map<string, number>(),
+      nodeCursor: 0
+    };
   }
 }

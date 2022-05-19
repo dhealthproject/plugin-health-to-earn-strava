@@ -31,11 +31,7 @@ export class ReferralController {
    */
   constructor() {
     this.router = Router();
-    this.router.get(
-      "/",
-      async (req: Request, res: Response) =>
-        await this.getReferrals(req, res)
-    );
+    this.router.get("/", this.getReferrals);
   }
 
   /**
@@ -55,15 +51,16 @@ export class ReferralController {
    * @async
    * @return {Promise<void>}
    */
-  private async getReferrals(req: Request, res: Response): Promise<void> {
+  private getReferrals = async (req: Request, res: Response): Promise<void> => {
     try {
       const result = await this.getReferralsFromFirestore();
       res.status(200).send({success: true, result: result});
     } catch (err) {
       if (err instanceof Error) {
         res.status(400).send({success: false, error: err.message});
+      } else {
+        res.status(400).send({success: false, error: err});
       }
-      res.status(400).send({success: false, error: err});
     }
   }
 

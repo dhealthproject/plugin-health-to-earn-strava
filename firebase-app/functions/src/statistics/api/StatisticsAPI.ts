@@ -15,6 +15,7 @@ import cors = require("cors");
 import {
   AddressController, FrequencyController, ReferralController,
 } from "./controllers";
+import { MainController } from "./controllers/MainController";
 
 /**
  * Onboarding Callable.
@@ -44,9 +45,7 @@ export class StatisticsAPI {
     //==================
     // Main route
     //==================
-    this.app.get("/", (req: express.Request, res: express.Response) => {
-      res.send("Hi!");
-    });
+    this.app.use("/", new MainController().getRouter());
 
     //==================
     // API routes

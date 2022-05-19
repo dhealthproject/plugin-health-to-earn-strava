@@ -1,17 +1,21 @@
 {
   "name": "functions",
   "scripts": {
+    "prebuild": "rimraf lib",
     "build": "tsc",
     "serve": "npm run build && firebase serve --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
+    "pretest": "npm run build",
+    "test": "mocha --ui bdd --recursive ./lib/test",
+    "test:cov": "nyc npm run test",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "10"
+    "node": "16"
   },
-  "main": "lib/index.js",
+  "main": "lib/src/index.js",
   "dependencies": {
     "@dhealth/sdk": "^1.0.3-alpha-202110081200",
     "axios": "^0.24.0",
@@ -22,7 +26,14 @@
     "rxjs": "^6.6.3"
   },
   "devDependencies": {
-    "firebase-functions-test": "^0.1.6",
+    "@types/chai": "^4.3.1",
+    "@types/mocha": "^9.1.1",
+    "@types/sinon": "^10.0.11",
+    "chai": "^4.3.6",
+    "firebase-functions-test": "^0.1.7",
+    "mocha": "^10.0.0",
+    "nyc": "^15.1.0",
+    "sinon": "^14.0.0",
     "typescript": "^3.2.2"
   },
   "private": true
